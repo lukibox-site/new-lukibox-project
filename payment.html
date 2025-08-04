@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>LUCKYBOX - 결제</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            color: #333;
+            padding: 50px;
+        }
+        .cta-button {
+            background-color: #e67e22;
+            color: white;
+            padding: 15px 30px;
+            font-size: 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .cta-button:hover {
+            background-color: #d35400;
+        }
+    </style>
+</head>
+<body>
+
+<h1>응모권 결제</h1>
+
+<p>원하는 응모권을 선택해주세요:</p>
+
+<form id="paymentForm">
+    <select name="ticket" id="ticket">
+        <option value="1000">1,000원</option>
+        <option value="5000">5,000원</option>
+        <option value="10000">10,000원</option>
+        <option value="20000">20,000원</option>
+        <option value="50000">50,000원</option>
+        <option value="100000">100,000원</option>
+    </select>
+    <button type="submit" class="cta-button">결제하기</button>
+</form>
+
+<script>
+    document.getElementById('paymentForm').addEventListener('submit', function(event) {
+        event.preventDefault();
+        
+        var ticket = document.getElementById('ticket').value;
+        var urlParams = new URLSearchParams(window.location.search);
+        var productName = urlParams.get('product');
+
+        // 결제 API 연동 필요 (결제 처리 후 응모 완료)
+        alert(`응모권 ${ticket}원 결제 완료! ${productName}에 응모되었습니다.`);
+        
+        // 결제 완료 후 응모 정보 전송 (구글 시트나 서버로)
+        fetch('YOUR_PAYMENT_URL', {
+            method: 'POST',
+            body: JSON.stringify({
+                ticket: ticket,
+                productName: productName
+            }),
+            headers: { 'Content-Type': 'application/json' }
+        })
+        .then(response => response.json())
+        .then(data => {
+            window.location.href = 'participation_complete.html';
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert("결제 실패. 다시 시도해주세요.");
+        });
+    });
+</script>
+
+</body>
+</html>
