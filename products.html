@@ -57,8 +57,8 @@
 </div>
 
 <script>
-    // Google Apps Script 연동으로 상품 목록을 가져오기
-    fetch('YOUR_GOOGLE_APPS_SCRIPT_URL')
+    // Google Apps Script API로 상품 목록 가져오기
+    fetch('https://script.google.com/macros/s/AKfycbwK0IbQ_XbxuEoHifg9njRQVjMIIbNBeO_f_av_eaD6fgPPlaxGWABrI3VUcjhWKjxySg/exec')
         .then(response => response.json())
         .then(products => {
             const productList = document.getElementById("productList");
