@@ -52,16 +52,24 @@
 <h1>상품 등록</h1>
 <form id="addProductForm">
     <label for="productName">상품명</label>
-    <input type="text" id="productName" name="productName" required>
+    <input type="text" id="productName" name="productName" value="Chrome Hearts Horseshoe Floral Fleece Zip-Up Hoodie (크롬하츠 홀스슈 플로랄 플리스 집업 후드)" required>
 
     <label for="productImage">상품 이미지 URL</label>
-    <input type="text" id="productImage" name="productImage" required>
+    <textarea id="productImage" name="productImage" required>
+    https://files.oaiusercontent.com/file-Ci6Jihsxz4G8HMUaiPGFut?se=2025-08-05T10%3A00%3A00Z&sp=r&sv=2021-08-06&sr=b&rscd=inline&rsct=image/png
+    https://files.oaiusercontent.com/file-CVzuQcEkn8EDkKgSfh78WW?se=2025-08-05T10%3A00%3A00Z&sp=r&sv=2021-08-06&sr=b&rscd=inline&rsct=image/png
+    https://files.oaiusercontent.com/file-Ek77coVKf9RVri89WX9n6a?se=2025-08-05T10%3A00%3A00Z&sp=r&sv=2021-08-06&sr=b&rscd=inline&rsct=image/png
+    https://files.oaiusercontent.com/file-NeMfSv8UnaSC9xhfknNa3N?se=2025-08-05T10%3A00%3A00Z&sp=r&sv=2021-08-06&sr=b&rscd=inline&rsct=image/png
+    </textarea>
 
     <label for="productDescription">상품 설명</label>
-    <textarea id="productDescription" name="productDescription" rows="4" required></textarea>
+    <textarea id="productDescription" name="productDescription" rows="4" required>
+    가격: 3,050,000원
+    색상 및 사이즈는 당첨된 분에 맞게 구매하여 드립니다.
+    </textarea>
 
     <label for="productDeadline">마감일</label>
-    <input type="date" id="productDeadline" name="productDeadline" required>
+    <input type="date" id="productDeadline" name="productDeadline" value="2025-08-31" required>
 
     <button type="submit">상품 등록</button>
 </form>
