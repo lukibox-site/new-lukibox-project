@@ -1,110 +1,117 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>상품 등록 - LUCKYBOX</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f0f0f0;
-            color: #333;
-            padding: 50px;
-        }
-        h1 {
-            text-align: center;
-        }
-        form {
-            background-color: white;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            width: 100%;
-            max-width: 600px;
-            margin: 0 auto;
-        }
-        input, textarea {
-            padding: 10px;
-            margin: 10px 0;
-            width: 100%;
-            border-radius: 5px;
-            border: 1px solid #ddd;
-            font-size: 16px;
-        }
-        button {
-            background-color: #e67e22;
-            color: white;
-            padding: 15px 30px;
-            font-size: 20px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            width: 100%;
-        }
-        button:hover {
-            background-color: #d35400;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>상품 등록 - LUCKYBOX</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f9f9f9;
+      color: #333;
+      padding: 50px;
+    }
+    h1 {
+      text-align: center;
+    }
+    form {
+      background-color: #fff;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    label {
+      font-weight: bold;
+    }
+    input, textarea {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0 20px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      font-size: 1rem;
+    }
+    button {
+      background-color: #007bff;
+      color: white;
+      padding: 14px;
+      font-size: 18px;
+      border: none;
+      border-radius: 5px;
+      width: 100%;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+  </style>
 </head>
 <body>
 
-<h1>상품 등록</h1>
-<form id="addProductForm">
-    <label for="productName">상품명</label>
-    <input type="text" id="productName" name="productName" value="Chrome Hearts Horseshoe Floral Fleece Zip-Up Hoodie (크롬하츠 홀스슈 플로랄 플리스 집업 후드)" required>
+  <h1>🎁 LUCKYBOX 상품 등록</h1>
 
-    <label for="productImage">상품 이미지 URL</label>
-    <textarea id="productImage" name="productImage" required>
-    https://files.oaiusercontent.com/file-Ci6Jihsxz4G8HMUaiPGFut?se=2025-08-05T10%3A00%3A00Z&sp=r&sv=2021-08-06&sr=b&rscd=inline&rsct=image/png
-    https://files.oaiusercontent.com/file-CVzuQcEkn8EDkKgSfh78WW?se=2025-08-05T10%3A00%3A00Z&sp=r&sv=2021-08-06&sr=b&rscd=inline&rsct=image/png
-    https://files.oaiusercontent.com/file-Ek77coVKf9RVri89WX9n6a?se=2025-08-05T10%3A00%3A00Z&sp=r&sv=2021-08-06&sr=b&rscd=inline&rsct=image/png
-    https://files.oaiusercontent.com/file-NeMfSv8UnaSC9xhfknNa3N?se=2025-08-05T10%3A00%3A00Z&sp=r&sv=2021-08-06&sr=b&rscd=inline&rsct=image/png
+  <form id="addProductForm">
+    <label for="productName">상품명</label>
+    <input
+      type="text"
+      id="productName"
+      name="productName"
+      value="Chrome Hearts Horseshoe Floral Fleece Zip-Up Hoodie (크롬하츠 홀스슈 플로랄 플리스 집업 후드)"
+      required
+    />
+
+    <label for="productImage">상품 이미지 URL (여러 줄 가능)</label>
+    <textarea id="productImage" name="productImage" rows="5" required>
+https://files.oaiusercontent.com/file-Ci6Jihsxz4G8HMUaiPGFut?se=2025-08-05T10%3A00%3A00Z&sp=r&sv=2021-08-06&sr=b&rscd=inline&rsct=image/png
+https://files.oaiusercontent.com/file-CVzuQcEkn8EDkKgSfh78WW?se=2025-08-05T10%3A00%3A00Z&sp=r&sv=2021-08-06&sr=b&rscd=inline&rsct=image/png
+https://files.oaiusercontent.com/file-Ek77coVKf9RVri89WX9n6a?se=2025-08-05T10%3A00%3A00Z&sp=r&sv=2021-08-06&sr=b&rscd=inline&rsct=image/png
+https://files.oaiusercontent.com/file-NeMfSv8UnaSC9xhfknNa3N?se=2025-08-05T10%3A00%3A00Z&sp=r&sv=2021-08-06&sr=b&rscd=inline&rsct=image/png
     </textarea>
 
     <label for="productDescription">상품 설명</label>
     <textarea id="productDescription" name="productDescription" rows="4" required>
-    가격: 3,050,000원
-    색상 및 사이즈는 당첨된 분에 맞게 구매하여 드립니다.
+가격: 3,050,000원
+색상 및 사이즈는 당첨된 분에 맞게 구매하여 드립니다.
     </textarea>
 
     <label for="productDeadline">마감일</label>
-    <input type="date" id="productDeadline" name="productDeadline" value="2025-08-31" required>
+    <input type="date" id="productDeadline" name="productDeadline" value="2025-08-31" required />
 
     <button type="submit">상품 등록</button>
-</form>
+  </form>
 
-<script>
-    document.getElementById("addProductForm").addEventListener("submit", function(event) {
-        event.preventDefault();
-        
-        var productName = document.getElementById("productName").value;
-        var productImage = document.getElementById("productImage").value;
-        var productDescription = document.getElementById("productDescription").value;
-        var productDeadline = document.getElementById("productDeadline").value;
+  <script>
+    document.getElementById("addProductForm").addEventListener("submit", function (event) {
+      event.preventDefault();
 
-        // Google Apps Script API로 데이터 전송
-        fetch('https://script.google.com/macros/s/AKfycbwK0IbQ_XbxuEoHifg9njRQVjMIIbNBeO_f_av_eaD6fgPPlaxGWABrI3VUcjhWKjxySg/exec', {
-            method: 'POST',
-            body: JSON.stringify({
-                productName: productName,
-                productImage: productImage,
-                productDescription: productDescription,
-                productDeadline: productDeadline
-            }),
-            headers: { 'Content-Type': 'application/json' }
+      const productName = document.getElementById("productName").value.trim();
+      const productImage = document.getElementById("productImage").value.trim();
+      const productDescription = document.getElementById("productDescription").value.trim();
+      const productDeadline = document.getElementById("productDeadline").value.trim();
+
+      fetch('https://script.google.com/macros/s/AKfycbwK0IbQ_XbxuEoHifg9njRQVjMIIbNBeO_f_av_eaD6fgPPlaxGWABrI3VUcjhWKjxySg/exec', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          productName,
+          productImage,
+          productDescription,
+          productDeadline
         })
+      })
         .then(response => response.json())
         .then(data => {
-            alert("상품이 성공적으로 등록되었습니다!");
-            window.location.href = 'products.html'; // 상품 목록 페이지로 이동
+          alert("✅ 상품이 성공적으로 등록되었습니다!");
+          window.location.href = "products.html";
         })
         .catch(error => {
-            console.error('Error:', error);
-            alert("상품 등록 실패. 다시 시도해주세요.");
+          console.error("등록 오류:", error);
+          alert("⚠️ 상품 등록에 실패했습니다. 다시 시도해 주세요.");
         });
     });
-</script>
+  </script>
 
 </body>
 </html>
