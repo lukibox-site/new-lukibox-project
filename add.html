@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>상품 등록 - LUCKYBOX</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            color: #333;
+            padding: 50px;
+        }
+        h1 {
+            text-align: center;
+        }
+        form {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        input, textarea {
+            padding: 10px;
+            margin: 10px 0;
+            width: 100%;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            font-size: 16px;
+        }
+        button {
+            background-color: #e67e22;
+            color: white;
+            padding: 15px 30px;
+            font-size: 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 100%;
+        }
+        button:hover {
+            background-color: #d35400;
+        }
+    </style>
+</head>
+<body>
+
+<h1>상품 등록</h1>
+<form id="addProductForm">
+    <label for="productName">상품명</label>
+    <input type="text" id="productName" name="productName" required>
+
+    <label for="productImage">상품 이미지 URL</label>
+    <input type="text" id="productImage" name="productImage" required>
+
+    <label for="productDescription">상품 설명</label>
+    <textarea id="productDescription" name="productDescription" rows="4" required></textarea>
+
+    <label for="productDeadline">마감일</label>
+    <input type="date" id="productDeadline" name="productDeadline" required>
+
+    <button type="submit">상품 등록</button>
+</form>
+
+<script>
+    document.getElementById("addProductForm").addEventListener("submit", function(event) {
+        event.preventDefault();
+        
+        var productName = document.getElementById("productName").value;
+        var productImage = document.getElementById("productImage").value;
+        var productDescription = document.getElementById("productDescription").value;
+        var productDeadline = document.getElementById("productDeadline").value;
+
+        // Google Apps Script 연동 부분 (상품 정보 전송)
+        fetch('YOUR_GOOGLE_APPS_SCRIPT_URL', {
+            method: 'POST',
+            body: JSON.stringify({
+                productName: productName,
+                productImage: productImage,
+                productDescription: productDescription,
+                productDeadline: productDeadline
+            }),
+            headers: { 'Content-Type': 'application/json' }
+        })
+        .then(response => response.json())
+        .then(data => {
+            alert("상품이 성공적으로 등록되었습니다!");
+            window.location.href = 'products.html'; // 상품 목록 페이지로 이동
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert("상품 등록 실패. 다시 시도해주세요.");
+        });
+    });
+</script>
+
+</body>
+</html>
