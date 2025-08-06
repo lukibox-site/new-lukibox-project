@@ -1,117 +1,12 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>🎁 LUCKYBOX 상품 등록</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background-color: #f9f9f9;
-      color: #333;
-      padding: 50px;
-      display: flex;
-      justify-content: center;
-    }
-    .container {
-      background: white;
-      padding: 40px;
-      border-radius: 12px;
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-      max-width: 500px;
-      width: 100%;
-    }
-    h1 {
-      text-align: center;
-      margin-bottom: 30px;
-    }
-    label {
-      display: block;
-      margin-top: 15px;
-    }
-    input, textarea {
-      width: 100%;
-      padding: 10px;
-      margin-top: 5px;
-      box-sizing: border-box;
-    }
-    button {
-      margin-top: 20px;
-      width: 100%;
-      padding: 12px;
-      background-color: #007bff;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-    button:hover {
-      background-color: #0056b3;
-    }
-    .message {
-      margin-top: 15px;
-      text-align: center;
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <h1>🎁 LUCKYBOX 상품 등록</h1>
-    <form id="addProductForm">
-      <label>상품명</label>
-      <input type="text" id="productName" required />
-
-      <label>상품 이미지 URL (여러 줄 가능)</label>
-      <textarea id="productImage" rows="4" required></textarea>
-
-      <label>상품 설명</label>
-      <textarea id="productDescription" rows="3" required></textarea>
-
-      <label>마감일</label>
-      <input type="date" id="productDeadline" required />
-
-      <button type="submit">상품 등록</button>
-      <div class="message" id="messageBox"></div>
-    </form>
-  </div>
-
-  <script>
-    document.getElementById("addProductForm").addEventListener("submit", function(e) {
-      e.preventDefault();
-
-      const productName = document.getElementById("productName").value;
-      const productImage = document.getElementById("productImage").value;
-      const productDescription = document.getElementById("productDescription").value;
-      const productDeadline = document.getElementById("productDeadline").value;
-
-      fetch("https://script.google.com/macros/s/AKfycby3PESCDxAMnuJJbAkaeqbhRNhiv30YKhCkl0aTmGJhIj68EESWT2M9i9ilgXlFD881dQ/exec", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          productName,
-          productImage,
-          productDescription,
-          productDeadline
-        }),
-      })
-      .then(response => response.json())
-      .then(data => {
-        const msg = document.getElementById("messageBox");
-        if (data.result === "success") {
-          msg.innerText = "✅ 상품이 등록되었습니다!";
-          msg.style.color = "green";
-        } else {
-          msg.innerText = "⚠️ 상품 등록에 실패했습니다. 다시 시도해 주세요.";
-          msg.style.color = "red";
-        }
-      })
-      .catch(error => {
-        console.error("Error:", error);
-        document.getElementById("messageBox").innerText = "⚠️ 오류 발생: 등록 실패";
-      });
-    });
-  </script>
-</body>
-</html>
+fetch("https://script.google.com/macros/s/AKfycbzA-1znBl76ERCKKXpOs6y8nwpc4YgyXplSVTRcDAMldoQc95Ddt2LZj1YLdjKm6bRI/exec", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    productName: productName,
+    productImage: productImage,
+    productDescription: productDescription,
+    productDeadline: productDeadline,
+  }),
+})
