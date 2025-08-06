@@ -1,12 +1,52 @@
-fetch("https://script.google.com/macros/s/AKfycbzA-1znBl76ERCKKXpOs6y8nwpc4YgyXplSVTRcDAMldoQc95Ddt2LZj1YLdjKm6bRI/exec", {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-  },
-  body: JSON.stringify({
-    productName: productName,
-    productImage: productImage,
-    productDescription: productDescription,
-    productDeadline: productDeadline,
-  }),
-})
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>상품 등록</title>
+</head>
+<body>
+  <h1>상품 등록</h1>
+
+  <form id="addProductForm">
+    <input type="text" id="productName" placeholder="상품명"><br>
+    <input type="text" id="productImage" placeholder="이미지 URL"><br>
+    <textarea id="productDescription" placeholder="설명"></textarea><br>
+    <input type="text" id="productDeadline" placeholder="마감일 (예: 2025-08-31)"><br>
+    <button type="submit">상품 등록</button>
+  </form>
+
+  <p id="message"></p>
+
+  <script>
+    document.getElementById("addProductForm").addEventListener("submit", function(e) {
+      e.preventDefault();
+
+      const productName = document.getElementById("productName").value;
+      const productImage = document.getElementById("productImage").value;
+      const productDescription = document.getElementById("productDescription").value;
+      const productDeadline = document.getElementById("productDeadline").value;
+
+      fetch("https://script.google.com/macros/s/AKfycbzA-1znBl76ERCKKXpOs6y8nwpc4YgyXplSVTRcDAMldoQc95Ddt2LZj1YLdjKm6bRI/exec", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          productName: productName,
+          productImage: productImage,
+          productDescription: productDescription,
+          productDeadline: productDeadline,
+        }),
+      })
+      .then(response => response.json())
+      .then(data => {
+        document.getElementById("message").innerText = "✅ 상품이 성공적으로 등록되었습니다!";
+      })
+      .catch(error => {
+        document.getElementById("message").innerText = "⚠️ 오류 발생: 등록 실패";
+        console.error("오류:", error);
+      });
+    });
+  </script>
+</body>
+</html>
