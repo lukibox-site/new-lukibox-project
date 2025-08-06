@@ -7,46 +7,28 @@
 <body>
   <h1>상품 등록</h1>
 
-  <form id="addProductForm">
-    <input type="text" id="productName" placeholder="상품명"><br>
-    <input type="text" id="productImage" placeholder="이미지 URL"><br>
-    <textarea id="productDescription" placeholder="설명"></textarea><br>
-    <input type="text" id="productDeadline" placeholder="마감일 (예: 2025-08-31)"><br>
+  <form id="addProductForm" action="https://script.google.com/macros/s/AKfycbyiP4SiM8TXhaVK3zy6NIPyh7DmIbD2tnAPUyz6v6oDztuG41ao99Z08zGOKG13eskR/exec" target="hiddenIframe" method="POST">
+    <input type="text" name="productName" placeholder="상품명"><br>
+    <input type="text" name="productImage" placeholder="이미지 URL"><br>
+    <textarea name="productDescription" placeholder="설명"></textarea><br>
+    <input type="text" name="productDeadline" placeholder="마감일 (예: 2025-08-31)"><br>
     <button type="submit">상품 등록</button>
   </form>
 
+  <iframe name="hiddenIframe" style="display:none;"></iframe>
   <p id="message"></p>
 
   <script>
-    document.getElementById("addProductForm").addEventListener("submit", function(e) {
-      e.preventDefault();
+    document.getElementById("addProductForm").addEventListener("submit", function () {
+      document.getElementById("message").innerText = "⏳ 등록 중... 잠시만 기다려 주세요.";
+    });
 
-      const productName = document.getElementById("productName").value;
-      const productImage = document.getElementById("productImage").value;
-      const productDescription = document.getElementById("productDescription").value;
-      const productDeadline = document.getElementById("productDeadline").value;
-
-      fetch("https://script.google.com/macros/s/AKfycbwG1IgPAULOsUxC651IwVowUw04CxfFUo1VEOABYzzL6rVGzvtamGK4Qxn9V-0gOOtD/exec", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          productName: productName,
-          productImage: productImage,
-          productDescription: productDescription,
-          productDeadline: productDeadline
-        })
-      })
-      .then(response => response.text())
-      .then(text => {
-        console.log("서버 응답:", text);
-        document.getElementById("message").innerText = "✅ 응답 확인됨: " + text;
-      })
-      .catch(error => {
-        console.error("오류:", error);
-        document.getElementById("message").innerText = "⚠️ 오류 발생: 등록 실패";
-      });
+    window.addEventListener("message", function (event) {
+      if (event.data.result === "success") {
+        document.getElementById("message").innerText = "✅ 상품이 성공적으로 등록되었습니다!";
+      } else {
+        document.getElementById("message").innerText = "⚠️ 오류 발생: " + event.data.message;
+      }
     });
   </script>
 </body>
