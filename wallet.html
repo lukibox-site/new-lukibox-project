@@ -27,12 +27,14 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-app.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-auth.js";
 
-    // 🔧 login.html과 동일한 Firebase 설정을 붙여넣으세요
+    // ✅ 네가 준 Firebase 설정 (login.html과 동일)
     const firebaseConfig = {
-      apiKey: "YOUR_API_KEY",
-      authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-      projectId: "YOUR_PROJECT_ID",
-      appId: "YOUR_APP_ID",
+      apiKey: "AIzaSyCE5bZaAMgsTrGRSu8glPLV2dM1YzIuEIE",
+      authDomain: "luckbox-auth.firebaseapp.com",
+      projectId: "luckbox-auth",
+      storageBucket: "luckbox-auth.firebasestorage.app",
+      messagingSenderId: "9060352791",
+      appId: "1:9060352791:web:f094bc42acfe419af9ad52"
     };
 
     const app = initializeApp(firebaseConfig);
@@ -53,7 +55,7 @@
 
     onAuthStateChanged(auth, async (user) => {
       if (!user) {
-        // 로그인하지 않았다면 로그인 페이지로 보냄 (돌아올 주소 포함)
+        // 로그인 필요: 로그인 후 돌아올 주소 포함
         location.href = `login.html?redirect=${encodeURIComponent(location.href)}`;
       } else {
         currentUser = user;
@@ -67,7 +69,7 @@
       if (!(amount > 0)) { msg('금액을 확인하세요.'); return; }
       msg('충전 처리 중…(임시)');
 
-      // ⚠️ Day2에서 실제 결제 성공 콜백 뒤에 이 요청을 호출하도록 바꿀 예정
+      // ⚠️ Day2에 실제 결제 성공 콜백에서 이 요청을 호출하도록 변경 예정
       const res = await fetch(WEBAPP_URL, {
         method:'POST',
         headers:{ 'Content-Type':'application/json' },
