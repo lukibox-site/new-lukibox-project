@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>내 지갑 - LUCKYBOX</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width:640px; margin:32px auto; padding:0 16px; }
+    .card { background:#fff; border:1px solid #eee; border-radius:12px; padding:20px; box-shadow:0 8px 24px rgba(0,0,0,.05); }
+    input, button { padding:12px; border-radius:8px; border:1px solid #ddd; }
+    button { background:#111; color:#fff; border:none; cursor:pointer; }
+    button:hover { opacity:.92; }
+    #msg { margin-top:10px; min-height:20px; }
+  </style>
+</head>
+<body>
+  <h2>내 지갑</h2>
+  <div class="card">
+    <p><b>잔액:</b> <span id="balance">-</span> P</p>
+    <label>충전 금액 (원 = 포인트)</label>
+    <input id="amt" type="number" min="1000" step="1000" value="1000"/>
+    <button id="topupBtn">충전(임시)</button>
+    <p id="msg"></p>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-auth.js";
+
+    // 🔧 login.html과 동일한 Firebase 설정을 붙여넣으세요
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+      projectId: "YOUR_PROJECT_ID",
+      appId: "YOUR_APP_ID",
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzr0NdCE6bMyz8J3Z4nKocZPECabcuZQzUEMjt9lbudyHmpebfGrK9ut1Xus_WUvewd/exec";
+    const msg = (t)=> document.getElementById('msg').innerText = t;
+
+    let currentUser = null;
+
+    async function refreshBalance() {
+      if (!currentUser) return;
+      const q = new URLSearchParams({ action:'customer', uid: currentUser.uid });
+      const res = await fetch(`${WEBAPP_URL}?${q}`);
+      const json = await res.json();
+      document.getElementById('balance').innerText = json.points ?? 0;
+    }
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        // 로그인하지 않았다면 로그인 페이지로 보냄 (돌아올 주소 포함)
+        location.href = `login.html?redirect=${encodeURIComponent(location.href)}`;
+      } else {
+        currentUser = user;
+        await refreshBalance();
+      }
+    });
+
+    document.getElementById('topupBtn').addEventListener('click', async () => {
+      if (!currentUser) return;
+      const amount = Number(document.getElementById('amt').value || 0);
+      if (!(amount > 0)) { msg('금액을 확인하세요.'); return; }
+      msg('충전 처리 중…(임시)');
+
+      // ⚠️ Day2에서 실제 결제 성공 콜백 뒤에 이 요청을 호출하도록 바꿀 예정
+      const res = await fetch(WEBAPP_URL, {
+        method:'POST',
+        headers:{ 'Content-Type':'application/json' },
+        body: JSON.stringify({ type:'topup', uid: currentUser.uid, email: currentUser.email || '', amount, note:'TEST_TOPUP' })
+      });
+      const json = await res.json();
+      if (json.result === 'success') {
+        msg('✅ 충전 완료');
+        await refreshBalance();
+      } else {
+        msg('⚠️ 충전 실패: ' + (json.message || 'unknown'));
+      }
+    });
+  </script>
+</body>
+</html>
