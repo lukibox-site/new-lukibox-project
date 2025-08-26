@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>로그인 - LUCKYBOX</title>
+  <style>
+    body { font-family: Arial, sans-serif; display:flex; align-items:center; justify-content:center; min-height:100vh; background:#f6f7fb; }
+    .card { background:#fff; padding:24px; border-radius:12px; box-shadow:0 8px 24px rgba(0,0,0,.08); width:360px; }
+    input { width:100%; padding:12px; margin:8px 0; border:1px solid #ddd; border-radius:8px; }
+    .row { display:flex; gap:8px; }
+    button { flex:1; padding:12px; border:none; border-radius:8px; background:#111; color:#fff; cursor:pointer; }
+    button:hover { opacity:.92; }
+    #msg { margin-top:10px; min-height:20px; color:#444; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>로그인 / 회원가입</h2>
+    <input id="email" type="email" placeholder="이메일" />
+    <input id="pw" type="password" placeholder="비밀번호 (6자 이상)" />
+    <div class="row">
+      <button onclick="login()">로그인</button>
+      <button onclick="signup()">회원가입</button>
+    </div>
+    <p id="msg"></p>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-auth.js";
+
+    // 🔧 여기에 본인 Firebase 설정을 붙여넣으세요 (Console > 프로젝트 > 웹앱 등록 시 제공)
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+      projectId: "YOUR_PROJECT_ID",
+      appId: "YOUR_APP_ID",
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzr0NdCE6bMyz8J3Z4nKocZPECabcuZQzUEMjt9lbudyHmpebfGrK9ut1Xus_WUvewd/exec";
+    const msg = (t)=> document.getElementById('msg').innerText = t;
+
+    async function upsertCustomer(user) {
+      try {
+        await fetch(WEBAPP_URL, {
+          method: 'POST',
+          headers: { 'Content-Type':'application/json' },
+          body: JSON.stringify({ type:'userUpsert', uid: user.uid, email: user.email || '' })
+        });
+      } catch(e) {
+        console.error('upsert error', e);
+      }
+    }
+
+    window.login = async () => {
+      const email = document.getElementById('email').value.trim();
+      const pw = document.getElementById('pw').value.trim();
+      try {
+        const u = await signInWithEmailAndPassword(auth, email, pw);
+        await upsertCustomer(u.user);
+        msg('✅ 로그인 성공');
+        const to = new URLSearchParams(location.search).get('redirect') || 'products.html';
+        location.href = to;
+      } catch (e) {
+        msg('⚠️ ' + e.message);
+      }
+    };
+
+    window.signup = async () => {
+      const email = document.getElementById('email').value.trim();
+      const pw = document.getElementById('pw').value.trim();
+      try {
+        const u = await createUserWithEmailAndPassword(auth, email, pw);
+        await upsertCustomer(u.user);
+        msg('✅ 회원가입 완료. 로그인 중…');
+        const to = new URLSearchParams(location.search).get('redirect') || 'products.html';
+        location.href = to;
+      } catch (e) {
+        msg('⚠️ ' + e.message);
+      }
+    };
+
+    // 로그인 상태면 필요 시 자동 복귀
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        // const to = new URLSearchParams(location.search).get('redirect') || 'products.html';
+        // location.href = to;
+      }
+    });
+  </script>
+</body>
+</html>
