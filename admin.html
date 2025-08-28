@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>관리자 - 추첨/환급</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width:900px; margin:32px auto; padding:0 16px; }
+    .row { display:flex; gap:8px; align-items:center; }
+    input, button { padding:10px; border-radius:8px; border:1px solid #ddd; }
+    button { background:#111; color:#fff; border:none; cursor:pointer; }
+    button:hover { opacity:.92; }
+    pre { background:#f7f7f8; padding:12px; border-radius:10px; overflow:auto; }
+    table { width:100%; border-collapse:collapse; margin-top:12px; }
+    th,td { border:1px solid #eee; padding:8px; text-align:left; }
+  </style>
+</head>
+<body>
+  <h2>관리자 페이지</h2>
+  <div class="row">
+    <input id="pname" placeholder="상품명 입력" style="flex:1"/>
+    <button id="loadBtn">응모 조회</button>
+    <button id="drawBtn">추첨 실행</button>
+    <button id="refundBtn">낙첨 100P 환급</button>
+  </div>
+  <p id="msg"></p>
+  <div id="result"></div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCE5bZaAMgsTrGRSu8glPLV2dM1YzIuEIE",
+      authDomain: "luckbox-auth.firebaseapp.com",
+      projectId: "luckbox-auth",
+      storageBucket: "luckbox-auth.firebasestorage.app",
+      messagingSenderId: "9060352791",
+      appId: "1:9060352791:web:f094bc42acfe419af9ad52"
+    };
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzr0NdCE6bMyz8J3Z4nKocZPECabcuZQzUEMjt9lbudyHmpebfGrK9ut1Xus_WUvewd/exec";
+    const $ = s => document.querySelector(s);
+    const msg = t => $('#msg').innerText = t;
+
+    let currentUser = null;
+    onAuthStateChanged(auth, (user) => {
+      if (!user) location.href = `login.html?redirect=${encodeURIComponent(location.href)}`;
+      else currentUser = user;
+    });
+
+    $('#loadBtn').addEventListener('click', async () => {
+      const name = $('#pname').value.trim();
+      if (!name) { msg('상품명을 입력하세요.'); return; }
+      msg('응모 불러오는 중…');
+      const q = new URLSearchParams({ action:'entries', product: name });
+      const r = await fetch(`${WEBAPP_URL}?${q}`); const rows = await r.json();
+      msg(`총 ${rows.length} 건`);
+      const html = [`<table><thead><tr><th>시간</th><th>uid</th><th>email</th><th>금액</th></tr></thead><tbody>`];
+      rows.forEach(r => html.push(`<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td>${r[4]}</td></tr>`));
+      html.push('</tbody></table>');
+      $('#result').innerHTML = html.join('');
+    });
+
+    $('#drawBtn').addEventListener('click', async () => {
+      if (!currentUser) return;
+      const name = $('#pname').value.trim();
+      if (!name) { msg('상품명을 입력하세요.'); return; }
+      msg('추첨 중…');
+      const idToken = await currentUser.getIdToken();
+      const r = await fetch(WEBAPP_URL, {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ type:'draw', productName: name, idToken })
+      });
+      const j = await r.json();
+      if (j.result === 'success') {
+        msg(`✅ 당첨자: ${j.winner.email || j.winner.uid} (weight=${j.winner.weight})`);
+        $('#result').innerHTML = `<pre>${JSON.stringify(j, null, 2)}</pre>`;
+      } else msg('⚠️ 실패: ' + (j.message || 'unknown'));
+    });
+
+    $('#refundBtn').addEventListener('click', async () => {
+      if (!currentUser) return;
+      const name = $('#pname').value.trim();
+      if (!name) { msg('상품명을 입력하세요.'); return; }
+      msg('낙첨 환급 중…');
+      const idToken = await currentUser.getIdToken();
+      const r = await fetch(WEBAPP_URL, {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ type:'refundLosers', productName: name, idToken })
+      });
+      const j = await r.json();
+      if (j.result === 'success') msg(`✅ 낙첨 환급 완료 (${j.count}명)`);
+      else msg('⚠️ 실패: ' + (j.message || 'unknown'));
+    });
+  </script>
+</body>
+</html>
