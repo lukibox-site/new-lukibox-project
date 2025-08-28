@@ -44,50 +44,56 @@
 <div class="product-list" id="productList"></div>
 
 <script>
+  // ✅ 웹앱 URL
   const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbzr0NdCE6bMyz8J3Z4nKocZPECabcuZQzUEMjt9lbudyHmpebfGrK9ut1Xus_WUvewd/exec';
   const PLACEHOLDER = 'https://via.placeholder.com/600x400?text=LUCKYBOX';
 
-  // YYYY-MM-DD or 사람이 쓴 문자열을 짧게 보이도록
+  // 날짜 보이기 Helper
   const toDisplayDate = (d) => {
     try {
       const dt = new Date(d);
       if (!isNaN(dt)) return dt.toLocaleString('ko-KR');
-      return String(d);
-    } catch { return String(d); }
+      return String(d || '');
+    } catch { return String(d || ''); }
   };
 
-  fetch(WEBAPP_URL) // doGet -> products
-    .then(r => r.json())
+  // 상품 목록 불러오기
+  fetch(WEBAPP_URL)
+    .then(res => res.json())
     .then(products => {
-      const $list = document.getElementById('productList');
-      $list.innerHTML = '';
+      const list = document.getElementById('productList');
+      list.innerHTML = '';
 
       products.forEach(p => {
-        // productImage 필드에 공백으로 URL이 여러 개 섞여 들어온 케이스 방지
-        let img = (p.productImage || '').trim();
-        if (img.includes(' ')) img = img.split(/\s+/)[0];
+        // 이미지 URL에 공백으로 여러 링크가 섞여 있으면 첫 번째만 사용
+        let imgUrl = (p.productImage || '').trim();
+        if (imgUrl.includes(' ')) imgUrl = imgUrl.split(/\s+/)[0];
 
-        const div = document.createElement('div');
-        div.className = 'product';
-        div.innerHTML = `
-          <img src="${img || PLACEHOLDER}" alt="${p.productName}">
+        const card = document.createElement('div');
+        card.className = 'product';
+        card.innerHTML = `
+          <img src="${imgUrl || PLACEHOLDER}" alt="${p.productName}">
           <h3>${p.productName}</h3>
           <p>${(p.productDescription || '').replace(/\n/g,'<br>')}</p>
-          <p>마감일: ${toDisplayDate(p.productDeadline || '')}</p>
+          <p>마감일: ${toDisplayDate(p.productDeadline)}</p>
           <button class="cta-button">응모하기</button>
         `;
-        const imageEl = div.querySelector('img');
-        imageEl.onerror = () => { imageEl.src = PLACEHOLDER; };
 
-        div.querySelector('.cta-button').addEventListener('click', () => {
+        // 이미지 깨지면 placeholder 대체
+        const imgEl = card.querySelector('img');
+        imgEl.onerror = () => { imgEl.src = PLACEHOLDER; };
+
+        // ✅ 응모하기 버튼 → pay.html?product=...
+        const btn = card.querySelector('.cta-button');
+        btn.addEventListener('click', () => {
           location.href = `pay.html?product=${encodeURIComponent(p.productName)}`;
         });
 
-        $list.appendChild(div);
+        list.appendChild(card);
       });
     })
     .catch(err => {
-      console.error(err);
+      console.error('상품 불러오기 실패:', err);
       alert('상품 목록을 불러오는 데 실패했습니다.');
     });
 </script>
