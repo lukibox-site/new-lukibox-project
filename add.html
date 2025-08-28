@@ -10,24 +10,24 @@
     h1 { margin:8px 0 16px; }
     .card { background:#fff; padding:20px; border-radius:12px; box-shadow:0 8px 24px rgba(0,0,0,.06); }
     .row { display:grid; gap:12px; grid-template-columns: 1fr; }
-    label { font-weight:600; }
+    label { font-weight:600; display:block; margin-top:10px; }
     input, textarea { width:100%; padding:12px; border:1px solid #ddd; border-radius:8px; }
     textarea { min-height:120px; resize:vertical; }
-    .actions { display:flex; gap:8px; margin-top:8px; }
+    .actions { display:flex; gap:8px; margin-top:12px; }
     button { padding:12px 16px; border:none; border-radius:8px; background:#111; color:#fff; cursor:pointer; }
     button[disabled] { opacity:.6; cursor:not-allowed; }
-    .note { color:#555; font-size:14px; }
     #msg { margin-top:12px; min-height:20px; }
+    .note { color:#555; font-size:14px; }
   </style>
 </head>
 <body>
   <div class="wrap">
     <h1>상품 등록</h1>
     <div class="card">
-      <!-- ✅ 숨은 iframe: 응답을 여기로 받음 (CORS 회피) -->
+      <!-- 숨은 iframe: CORS 회피 -->
       <iframe name="hiddenIframe" style="display:none;"></iframe>
 
-      <!-- ✅ 폼 제출: Apps Script doPost가 e.parameter로 받음 -->
+      <!-- 폼 제출 (Apps Script doPost는 e.parameter로 받음) -->
       <form id="addProductForm"
             action="https://script.google.com/macros/s/AKfycbzr0NdCE6bMyz8J3Z4nKocZPECabcuZQzUEMjt9lbudyHmpebfGrK9ut1Xus_WUvewd/exec"
             method="POST"
@@ -39,6 +39,7 @@
 
         <label>이미지 URL *</label>
         <input name="productImage" type="url" placeholder="https:// 로 시작하는 공개 이미지 1개" required />
+        <div class="note">이미지 URL은 <b>1개만</b> 넣어주세요. 여러 개 넣으면 첫 번째만 사용됩니다.</div>
 
         <label>설명</label>
         <textarea name="productDescription" placeholder="가격/구성/주의사항 등"></textarea>
@@ -46,42 +47,48 @@
         <label>마감일 (선택)</label>
         <input name="productDeadline" type="datetime-local" />
 
-        <div class="actions" style="display:flex; gap:8px; margin-top:8px;">
+        <div class="actions">
           <button type="submit">등록하기</button>
           <a href="products.html"><button type="button" style="background:#666">상품 목록</button></a>
         </div>
       </form>
 
-      <p id="msg" style="margin-top:12px;"></p>
+      <p id="msg">⏳ 등록할 상품 정보를 입력해 주세요.</p>
     </div>
   </div>
 
   <script>
     const msg = (t)=> document.getElementById('msg').innerText = t || '';
 
-    // 폼 제출 시 진행 메시지
+    // 폼 제출 시 진행 메시지 + 백업 이동 (postMessage 누락 대비)
     document.getElementById('addProductForm').addEventListener('submit', () => {
       msg('⏳ 등록 처리 중…');
-      // 5초 내 응답이 없으면 시트 확인 안내
+      // postMessage 수신 여부 플래그
+      document.__lucky_posted = false;
+
+      // 3.5초 내 postMessage가 안 오면 목록으로 이동(캐시 무력화)
       setTimeout(() => {
-        if (!document.__luky_posted) {
-          msg('✅ 등록이 완료되었을 수 있습니다. (시트를 확인해 주세요)');
+        if (!document.__lucky_posted) {
+          msg('✅ 등록이 완료되었을 수 있습니다. 목록으로 이동합니다…');
+          location.href = `products.html?added=${Date.now()}`;
         }
-      }, 5000);
+      }, 3500);
     });
 
-    // ✅ Apps Script doPost가 postMessage로 성공/실패를 보내도록 되어 있음
+    // Apps Script doPost가 보내는 postMessage 수신
+    // (서버에서 HtmlService로 다음과 같이 응답해야 함:
+    //  HtmlService.createHtmlOutput('<script>window.parent.postMessage({ result:"success" }, "*");</script>')
+    //  .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL); )
     window.addEventListener('message', (ev) => {
- if (ev.data.result === 'success') {
-  msg('✅ 등록 완료! 곧 목록으로 이동합니다…');
-  setTimeout(() => {
-    location.href = `products.html?added=${Date.now()}`; // ← 캐시 무력화
-  }, 600);
-}
-     if (!ev.data || !ev.data.result) return;
-      document.__luky_posted = true;
+      if (!ev || !ev.data || !('result' in ev.data)) return;
+
+      document.__lucky_posted = true;
+
       if (ev.data.result === 'success') {
-        msg('✅ 등록 완료! products.html에서 확인하세요.');
+        msg('✅ 등록 완료! 곧 목록으로 이동합니다…');
+        setTimeout(() => {
+          location.href = `products.html?added=${Date.now()}`; // 캐시 무력화
+        }, 600);
       } else {
         msg('⚠️ 등록 실패: ' + (ev.data.message || '알 수 없는 오류'));
       }
