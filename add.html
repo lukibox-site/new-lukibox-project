@@ -58,41 +58,38 @@
   </div>
 
   <script>
-    const msg = (t)=> document.getElementById('msg').innerText = t || '';
+  const msg = (t)=> document.getElementById('msg').innerText = t || '';
 
-    // 폼 제출 시 진행 메시지 + 백업 이동 (postMessage 누락 대비)
-    document.getElementById('addProductForm').addEventListener('submit', () => {
-      msg('⏳ 등록 처리 중…');
-      // postMessage 수신 여부 플래그
-      document.__lucky_posted = false;
+  // 폼 제출 시 진행 메시지 + 백업 이동 (postMessage 누락 대비)
+  document.getElementById('addProductForm').addEventListener('submit', () => {
+    msg('⏳ 등록 처리 중…');
+    // postMessage 수신 여부 플래그
+    document.__lucky_posted = false;
 
-      // 3.5초 내 postMessage가 안 오면 목록으로 이동(캐시 무력화)
-      setTimeout(() => {
-        if (!document.__lucky_posted) {
-          msg('✅ 등록이 완료되었을 수 있습니다. 목록으로 이동합니다…');
-          location.href = `products.html?added=${Date.now()}`;
-        }
-      }, 3500);
-    });
-
-    // Apps Script doPost가 보내는 postMessage 수신
-    // (서버에서 HtmlService로 다음과 같이 응답해야 함:
-    //  HtmlService.createHtmlOutput('<script>window.parent.postMessage({ result:"success" }, "*");</script>')
-    //  .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL); )
-    window.addEventListener('message', (ev) => {
-      if (!ev || !ev.data || !('result' in ev.data)) return;
-
-      document.__lucky_posted = true;
-
-      if (ev.data.result === 'success') {
-        msg('✅ 등록 완료! 곧 목록으로 이동합니다…');
-        setTimeout(() => {
-          location.href = `products.html?added=${Date.now()}`; // 캐시 무력화
-        }, 600);
-      } else {
-        msg('⚠️ 등록 실패: ' + (ev.data.message || '알 수 없는 오류'));
+    // 3.5초 내 postMessage가 안 오면 목록으로 이동(캐시 무력화)
+    setTimeout(() => {
+      if (!document.__lucky_posted) {
+        msg('✅ 등록이 완료되었을 수 있습니다. 목록으로 이동합니다…');
+        location.href = `products.html?added=${Date.now()}`;
       }
-    });
-  </script>
+    }, 3500);
+  });
+
+  // Apps Script doPost에서 보내는 postMessage 수신 (iframe → 부모창)
+  window.addEventListener('message', (ev) => {
+    if (!ev || !ev.data || !('result' in ev.data)) return;
+
+    document.__lucky_posted = true;
+
+    if (ev.data.result === 'success') {
+      msg('✅ 등록 완료! 곧 목록으로 이동합니다…');
+      setTimeout(() => {
+        location.href = `products.html?added=${Date.now()}`; // 캐시 무력화
+      }, 600);
+    } else {
+      msg('⚠️ 등록 실패: ' + (ev.data.message || '알 수 없는 오류'));
+    }
+  });
+</script>
 </body>
 </html>
