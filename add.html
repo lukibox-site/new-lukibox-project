@@ -1,132 +1,228 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>상품 등록 - LUCKYBOX</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+  <title>상품 목록 - LUCKYBOX</title>
   <style>
-    body { font-family: Arial, sans-serif; background:#f6f7fb; margin:0; padding:24px; }
-    .wrap { max-width:720px; margin:0 auto; }
-    h1 { margin:8px 0 16px; }
-    .card { background:#fff; padding:20px; border-radius:12px; box-shadow:0 8px 24px rgba(0,0,0,.06); }
-    label { font-weight:600; display:block; margin-top:12px; }
-    input, textarea { width:100%; padding:12px; border:1px solid #ddd; border-radius:8px; }
-    textarea { min-height:120px; resize:vertical; }
-    .grid-2 { display:grid; grid-template-columns: 1fr; gap:10px; }
-    @media (min-width: 640px){ .grid-2 { grid-template-columns: 1fr 1fr; } }
-    .actions { display:flex; gap:8px; margin-top:16px; }
-    button { padding:12px 16px; border:none; border-radius:8px; background:#111; color:#fff; cursor:pointer; }
-    button[disabled] { opacity:.6; cursor:not-allowed; }
-    #msg { margin-top:12px; min-height:20px; }
-    .note { color:#555; font-size:14px; }
+    :root { --card-w: 260px; --accent:#e67e22; --accent-dark:#d35400; }
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f0f0f0;
+      color: #333;
+      padding: 50px 20px;
+    }
+    .top-links {
+      position: fixed; right: 16px; top: 16px;
+      background: #fff; padding: 6px 10px; border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,.08);
+      z-index: 10;
+    }
+    h1 { text-align: center; margin: 0 0 24px; }
+    .product-list { display: flex; flex-wrap: wrap; justify-content: center; gap: 24px; }
+    .product {
+      background-color: #fff;
+      width: var(--card-w);
+      text-align: center;
+      border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,.08);
+      padding: 18px; display:flex; flex-direction:column; gap:10px;
+    }
+    .product img {
+      width: 100%; height: auto; border-radius: 8px;
+      aspect-ratio: 4 / 3; object-fit: cover; display: block; cursor: zoom-in;
+    }
+    .cta-button {
+      background-color: var(--accent); color: #fff; padding: 10px 20px;
+      font-size: 16px; border: none; border-radius: 6px; cursor: pointer;
+    }
+    .cta-button:hover { background-color: var(--accent-dark); }
+    .desc { color:#444; font-size:14px; line-height:1.4; min-height:3em; }
+
+    /* ===== 모달 갤러리 ===== */
+    .modal {
+      position: fixed; inset: 0; background: rgba(0,0,0,.6);
+      display: none; align-items: center; justify-content: center; z-index: 999;
+      padding: 20px;
+    }
+    .modal.open { display: flex; }
+    .viewer {
+      background:#111; color:#fff; border-radius:12px; width: min(900px, 96vw);
+      padding: 10px; box-shadow: 0 10px 30px rgba(0,0,0,.4);
+    }
+    .viewer-main {
+      position: relative; background:#000; border-radius:10px; overflow:hidden;
+      aspect-ratio: 16/10; display:flex; align-items:center; justify-content:center;
+    }
+    .viewer-main img { max-width:100%; max-height:100%; display:block; }
+    .nav {
+      position:absolute; top:50%; transform:translateY(-50%); width:100%;
+      display:flex; justify-content:space-between; pointer-events:none;
+    }
+    .nav button {
+      pointer-events:auto; background:rgba(0,0,0,.45); color:#fff; border:none;
+      font-size:22px; width:44px; height:44px; border-radius:50%; cursor:pointer;
+    }
+    .thumbs {
+      display:flex; gap:8px; padding:10px 4px; overflow-x:auto; margin-top:6px;
+    }
+    .thumbs img {
+      width:90px; height:68px; object-fit:cover; border-radius:6px; cursor:pointer;
+      opacity:.7; border:2px solid transparent;
+    }
+    .thumbs img.active { opacity:1; border-color:#fff; }
+    .viewer-top { display:flex; justify-content:space-between; align-items:center; padding:4px 6px 10px; }
+    .viewer-title { font-weight:700; font-size:16px; color:#eee; }
+    .close { background:transparent; color:#fff; border:none; font-size:22px; cursor:pointer; }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <h1>상품 등록</h1>
-    <div class="card">
-      <!-- 숨은 iframe: CORS 회피 -->
-      <iframe name="hiddenIframe" style="display:none;"></iframe>
 
-      <!-- 폼 제출 (Apps Script doPost는 e.parameter로 받음) -->
-      <form id="addProductForm"
-            action="https://script.google.com/macros/s/AKfycbzr0NdCE6bMyz8J3Z4nKocZPECabcuZQzUEMjt9lbudyHmpebfGrK9ut1Xus_WUvewd/exec"
-            method="POST"
-            target="hiddenIframe">
-        <input type="hidden" name="type" value="product" />
-        <!-- productImage로 보낼 최종 문자열(자동 채움) -->
-        <input type="hidden" name="productImage" id="productImageFinal" />
+<div class="top-links">
+  <a href="login.html">로그인</a> |
+  <a href="wallet.html">지갑</a>
+</div>
 
-        <label>상품명 *</label>
-        <input name="productName" type="text" placeholder="예) Chrome Hearts 시계" required />
+<h1>등록된 상품 목록</h1>
+<div class="product-list" id="productList"></div>
 
-        <label>이미지 URL (최대 4개)</label>
-        <div class="note" style="margin-top:4px">공개로 접근 가능한 이미지 주소만 입력하세요. 비워둔 칸은 무시됩니다.</div>
-        <div class="grid-2">
-          <input id="img1" type="url" placeholder="이미지 1 (필수)">
-          <input id="img2" type="url" placeholder="이미지 2 (선택)">
-          <input id="img3" type="url" placeholder="이미지 3 (선택)">
-          <input id="img4" type="url" placeholder="이미지 4 (선택)">
-        </div>
-        <div class="note" style="margin-top:6px">※ 현재 목록 화면은 <b>첫 번째</b> 이미지로만 표시됩니다. (나중에 갤러리 확장 가능)</div>
-
-        <label>설명</label>
-        <textarea name="productDescription" placeholder="가격/구성/주의사항 등"></textarea>
-
-        <label>마감일 (선택)</label>
-        <input name="productDeadline" type="datetime-local" />
-
-        <div class="actions">
-          <button type="submit">등록하기</button>
-          <a href="products.html"><button type="button" style="background:#666">상품 목록</button></a>
-        </div>
-      </form>
-
-      <p id="msg">⏳ 등록할 상품 정보를 입력해 주세요.</p>
+<!-- 갤러리 모달 -->
+<div class="modal" id="galleryModal" aria-hidden="true">
+  <div class="viewer" role="dialog" aria-modal="true">
+    <div class="viewer-top">
+      <div class="viewer-title" id="viewerTitle"></div>
+      <button class="close" id="closeModal" aria-label="닫기">✕</button>
     </div>
+    <div class="viewer-main">
+      <img id="viewerImage" alt="상품 이미지" />
+      <div class="nav">
+        <button id="prevBtn" aria-label="이전">‹</button>
+        <button id="nextBtn" aria-label="다음">›</button>
+      </div>
+    </div>
+    <div class="thumbs" id="thumbs"></div>
   </div>
+</div>
 
-  <script>
-    const msg = (t)=> document.getElementById('msg').innerText = t || '';
-    const form = document.getElementById('addProductForm');
-    const submitBtn = form.querySelector('button[type="submit"]');
-    const imgInputs = ['img1','img2','img3','img4'].map(id => document.getElementById(id));
-    const finalHidden = document.getElementById('productImageFinal');
+<script>
+  const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbzr0NdCE6bMyz8J3Z4nKocZPECabcuZQzUEMjt9lbudyHmpebfGrK9ut1Xus_WUvewd/exec';
+  const PLACEHOLDER = 'https://via.placeholder.com/600x400?text=LUCKYBOX';
 
-    // 간단 URL 정리: 앞뒤 공백 제거, 공백이 섞인 경우 첫 토큰만
-    const cleanUrl = (s) => {
-      if (!s) return '';
-      const one = String(s).trim().split(/\s+/)[0];
-      return one;
-    };
+  const toDisplayDate = (d) => {
+    try { const dt = new Date(d); if (!isNaN(dt)) return dt.toLocaleString('ko-KR'); }
+    catch {}
+    return String(d || '');
+  };
 
-    form.addEventListener('submit', (e) => {
-      // 이미지 최소 1개 검증 + 1~4개를 공백으로 합치기
-      const urls = imgInputs
-        .map(inp => cleanUrl(inp.value))
-        .filter(u => u); // 빈칸 제거
+  // ===== 목록 로딩 =====
+  async function loadProducts() {
+    const url = `${WEBAPP_URL}?_=${Date.now()}`;
+    const res = await fetch(url, { cache: 'no-store' });
+    const products = await res.json();
 
-      if (urls.length === 0) {
-        e.preventDefault();
-        msg('⚠️ 이미지 URL을 최소 1개 입력해 주세요.');
-        return;
-      }
+    products.sort((a,b) => new Date(b.registeredDate || 0) - new Date(a.registeredDate || 0));
 
-      // 최종 productImage 필드에 공백으로 이어 붙여서 넣기
-      finalHidden.value = urls.join(' ');
+    const list = document.getElementById('productList');
+    list.innerHTML = '';
 
-      // 중복 제출 방지 & 진행 메시지
-      submitBtn.disabled = true;
-      msg('⏳ 등록 처리 중…');
+    products.forEach(p => {
+      // 이미지들 추출(최대 4개)
+      const imgs = String(p.productImage || '').trim().split(/\s+/).filter(Boolean).slice(0,4);
+      const first = imgs[0] || PLACEHOLDER;
 
-      // postMessage 수신 여부 플래그
-      document.__lucky_posted = false;
+      const card = document.createElement('div');
+      card.className = 'product';
+      card.innerHTML = `
+        <img src="${first}" alt="${p.productName}" loading="lazy" decoding="async" />
+        <h3 style="margin:6px 0 0">${p.productName}</h3>
+        <div class="desc">${(p.productDescription || '').replace(/\n/g,'<br>')}</div>
+        <p style="margin:0 0 8px;">마감일: ${toDisplayDate(p.productDeadline)}</p>
+        <button class="cta-button">응모하기</button>
+      `;
 
-      // 3.5초 내 postMessage가 안 오면 목록으로 이동(캐시 무력화)
-      setTimeout(() => {
-        if (!document.__lucky_posted) {
-          msg('✅ 등록이 완료되었을 수 있습니다. 목록으로 이동합니다…');
-          location.href = `products.html?added=${Date.now()}`;
-        }
-      }, 3500);
+      // 이미지 에러 시 대체
+      const imgEl = card.querySelector('img');
+      imgEl.onerror = () => { imgEl.src = PLACEHOLDER; };
+
+      // 이미지 클릭 → 갤러리 모달
+      imgEl.addEventListener('click', () => openGallery(p.productName, imgs));
+
+      // 응모하기 → pay.html
+      card.querySelector('.cta-button').addEventListener('click', () => {
+        location.href = `pay.html?product=${encodeURIComponent(p.productName)}`;
+      });
+
+      list.appendChild(card);
     });
+  }
 
-    // Apps Script doPost에서 보내는 postMessage 수신 (iframe → 부모창)
-    window.addEventListener('message', (ev) => {
-      if (!ev || !ev.data || !('result' in ev.data)) return;
+  // ===== 갤러리 모달 동작 =====
+  const modal = document.getElementById('galleryModal');
+  const viewerImg = document.getElementById('viewerImage');
+  const viewerTitle = document.getElementById('viewerTitle');
+  const thumbs = document.getElementById('thumbs');
+  const prevBtn = document.getElementById('prevBtn');
+  const nextBtn = document.getElementById('nextBtn');
+  const closeBtn = document.getElementById('closeModal');
 
-      document.__lucky_posted = true;
+  let gallery = { title:'', images:[], index:0 };
 
-      if (ev.data.result === 'success') {
-        msg('✅ 등록 완료! 곧 목록으로 이동합니다…');
-        setTimeout(() => {
-          location.href = `products.html?added=${Date.now()}`; // 캐시 무력화
-        }, 600);
-      } else {
-        msg('⚠️ 등록 실패: ' + (ev.data.message || '알 수 없는 오류'));
-        submitBtn.disabled = false;
-      }
+  function openGallery(title, images) {
+    gallery.title = title;
+    gallery.images = images.length ? images : [PLACEHOLDER];
+    gallery.index = 0;
+
+    viewerTitle.textContent = title;
+    renderGallery();
+    modal.classList.add('open');
+    modal.setAttribute('aria-hidden','false');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeGallery() {
+    modal.classList.remove('open');
+    modal.setAttribute('aria-hidden','true');
+    document.body.style.overflow = '';
+  }
+
+  function renderGallery() {
+    const url = gallery.images[gallery.index] || PLACEHOLDER;
+    viewerImg.src = url;
+    viewerImg.onerror = () => { viewerImg.src = PLACEHOLDER; };
+
+    // 썸네일
+    thumbs.innerHTML = '';
+    gallery.images.forEach((u, i) => {
+      const t = document.createElement('img');
+      t.src = u; t.alt = `thumb-${i}`;
+      t.onerror = () => { t.src = PLACEHOLDER; };
+      if (i === gallery.index) t.classList.add('active');
+      t.addEventListener('click', () => { gallery.index = i; renderGallery(); });
+      thumbs.appendChild(t);
     });
-  </script>
+  }
+
+  prevBtn.addEventListener('click', () => {
+    gallery.index = (gallery.index - 1 + gallery.images.length) % gallery.images.length;
+    renderGallery();
+  });
+  nextBtn.addEventListener('click', () => {
+    gallery.index = (gallery.index + 1) % gallery.images.length;
+    renderGallery();
+  });
+  closeBtn.addEventListener('click', closeGallery);
+  modal.addEventListener('click', (e) => { if (e.target === modal) closeGallery(); });
+  window.addEventListener('keydown', (e) => {
+    if (!modal.classList.contains('open')) return;
+    if (e.key === 'Escape') closeGallery();
+    if (e.key === 'ArrowLeft') prevBtn.click();
+    if (e.key === 'ArrowRight') nextBtn.click();
+  });
+
+  // 첫 로드 + 5초 후 재로딩 (시트 반영 지연 대비)
+  loadProducts();
+  setTimeout(() => { loadProducts().catch(()=>{}); }, 5000);
+</script>
+
 </body>
 </html>
