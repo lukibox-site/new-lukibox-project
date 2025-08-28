@@ -1,88 +1,95 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>상품 목록 - LUCKYBOX</title>
-    <style>
-        body {
- <div style="position:fixed; right:16px; top:16px; background:#fff; padding:6px 10px; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,.08);">
-  <a href="login.html">로그인</a> |
-  <a href="wallet.html">지갑</a>
-</div>
-           font-family: Arial, sans-serif;
-            background-color: #f0f0f0;
-            color: #333;
-            padding: 50px;
-        }
-        h1 {
-            text-align: center;
-        }
-        .product-list {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-        .product {
-            background-color: white;
-            margin: 15px;
-            padding: 20px;
-            width: 250px;
-            text-align: center;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        }
-        .product img {
-            width: 100%;
-            height: auto;
-            border-radius: 5px;
-        }
-        .cta-button {
-            background-color: #e67e22;
-            color: white;
-            padding: 10px 20px;
-            font-size: 16px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        .cta-button:hover {
-            background-color: #d35400;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+  <title>상품 목록 - LUCKYBOX</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f0f0f0;
+      color: #333;
+      padding: 50px;
+    }
+    .top-links {
+      position: fixed; right: 16px; top: 16px;
+      background: #fff; padding: 6px 10px; border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,.08);
+      z-index: 10;
+    }
+    h1 { text-align: center; }
+    .product-list { display: flex; flex-wrap: wrap; justify-content: center; }
+    .product {
+      background-color: #fff;
+      margin: 15px; padding: 20px; width: 260px; text-align: center;
+      border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,.1);
+    }
+    .product img { width: 100%; height: auto; border-radius: 5px; }
+    .cta-button {
+      background-color: #e67e22; color: #fff; padding: 10px 20px;
+      font-size: 16px; border: none; border-radius: 5px; cursor: pointer;
+    }
+    .cta-button:hover { background-color: #d35400; }
+  </style>
 </head>
 <body>
 
-<h1>등록된 상품 목록</h1>
-
-<div class="product-list" id="productList">
-    <!-- 상품 목록은 동적으로 로딩됩니다. -->
+<div class="top-links">
+  <a href="login.html">로그인</a> |
+  <a href="wallet.html">지갑</a>
 </div>
 
+<h1>등록된 상품 목록</h1>
+<div class="product-list" id="productList"></div>
+
 <script>
-    // Google Apps Script API로 상품 목록 가져오기
-    fetch('https://script.google.com/macros/s/AKfycbzr0NdCE6bMyz8J3Z4nKocZPECabcuZQzUEMjt9lbudyHmpebfGrK9ut1Xus_WUvewd/exec')
-        .then(response => response.json())
-        .then(products => {
-            const productList = document.getElementById("productList");
-            products.forEach(product => {
-                const productDiv = document.createElement('div');
-                productDiv.classList.add('product');
-                productDiv.innerHTML = `
-                    <img src="${product.productImage}" alt="${product.productName}">
-                    <h3>${product.productName}</h3>
-                    <p>${product.productDescription}</p>
-                    <p>마감일: ${product.productDeadline}</p>
-                    <button class="cta-button">응모하기</button>
-                `;
-                productList.appendChild(productDiv);
-            });
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert("상품 목록을 불러오는 데 실패했습니다.");
+  const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbzr0NdCE6bMyz8J3Z4nKocZPECabcuZQzUEMjt9lbudyHmpebfGrK9ut1Xus_WUvewd/exec';
+  const PLACEHOLDER = 'https://via.placeholder.com/600x400?text=LUCKYBOX';
+
+  // YYYY-MM-DD or 사람이 쓴 문자열을 짧게 보이도록
+  const toDisplayDate = (d) => {
+    try {
+      const dt = new Date(d);
+      if (!isNaN(dt)) return dt.toLocaleString('ko-KR');
+      return String(d);
+    } catch { return String(d); }
+  };
+
+  fetch(WEBAPP_URL) // doGet -> products
+    .then(r => r.json())
+    .then(products => {
+      const $list = document.getElementById('productList');
+      $list.innerHTML = '';
+
+      products.forEach(p => {
+        // productImage 필드에 공백으로 URL이 여러 개 섞여 들어온 케이스 방지
+        let img = (p.productImage || '').trim();
+        if (img.includes(' ')) img = img.split(/\s+/)[0];
+
+        const div = document.createElement('div');
+        div.className = 'product';
+        div.innerHTML = `
+          <img src="${img || PLACEHOLDER}" alt="${p.productName}">
+          <h3>${p.productName}</h3>
+          <p>${(p.productDescription || '').replace(/\n/g,'<br>')}</p>
+          <p>마감일: ${toDisplayDate(p.productDeadline || '')}</p>
+          <button class="cta-button">응모하기</button>
+        `;
+        const imageEl = div.querySelector('img');
+        imageEl.onerror = () => { imageEl.src = PLACEHOLDER; };
+
+        div.querySelector('.cta-button').addEventListener('click', () => {
+          location.href = `pay.html?product=${encodeURIComponent(p.productName)}`;
         });
+
+        $list.appendChild(div);
+      });
+    })
+    .catch(err => {
+      console.error(err);
+      alert('상품 목록을 불러오는 데 실패했습니다.');
+    });
 </script>
 
 </body>
