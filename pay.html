@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>결제/응모 - LUCKYBOX</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width:640px; margin:32px auto; padding:0 16px; }
+    .card { background:#fff; border:1px solid #eee; border-radius:12px; padding:20px; box-shadow:0 8px 24px rgba(0,0,0,.06); }
+    button { padding:12px 16px; border:none; border-radius:8px; background:#111; color:#fff; cursor:pointer; }
+    select { padding:10px; border:1px solid #ddd; border-radius:8px; width:100%; margin:8px 0; }
+    #msg { margin-top:10px; min-height:20px; }
+  </style>
+</head>
+<body>
+  <h2>응모하기</h2>
+  <div class="card">
+    <p><b>상품명:</b> <span id="pname"></span></p>
+    <p><b>내 잔액:</b> <span id="balance">-</span> P</p>
+    <label>응모권 금액</label>
+    <select id="amount">
+      <option value="1000">1,000원</option>
+      <option value="5000">5,000원</option>
+      <option value="10000">10,000원</option>
+      <option value="20000">20,000원</option>
+      <option value="50000">50,000원</option>
+      <option value="100000">100,000원</option>
+    </select>
+    <button id="enterBtn">포인트로 응모하기</button>
+    <p id="msg"></p>
+    <p style="margin-top:8px;"><a href="wallet.html">잔액이 부족하면 지갑에서 충전하기</a></p>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCE5bZaAMgsTrGRSu8glPLV2dM1YzIuEIE",
+      authDomain: "luckbox-auth.firebaseapp.com",
+      projectId: "luckbox-auth",
+      storageBucket: "luckbox-auth.firebasestorage.app",
+      messagingSenderId: "9060352791",
+      appId: "1:9060352791:web:f094bc42acfe419af9ad52"
+    };
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzr0NdCE6bMyz8J3Z4nKocZPECabcuZQzUEMjt9lbudyHmpebfGrK9ut1Xus_WUvewd/exec";
+    const params = new URLSearchParams(location.search);
+    const productName = params.get('product') || '';
+    document.getElementById('pname').innerText = productName;
+
+    const msg = (t)=> document.getElementById('msg').innerText = t;
+    let currentUser = null;
+
+    async function refreshBalance() {
+      if (!currentUser) return;
+      const q = new URLSearchParams({ action:'customer', uid: currentUser.uid });
+      const r = await fetch(`${WEBAPP_URL}?${q}`); const j = await r.json();
+      document.getElementById('balance').innerText = j.points ?? 0;
+      return Number(j.points || 0);
+    }
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) location.href = `login.html?redirect=${encodeURIComponent(location.href)}`;
+      else { currentUser = user; await refreshBalance(); }
+    });
+
+    document.getElementById('enterBtn').addEventListener('click', async () => {
+      if (!currentUser) return;
+      if (!productName) { msg('상품명이 없습니다.'); return; }
+      const amount = Number(document.getElementById('amount').value);
+      msg('응모 처리 중…');
+      try {
+        const res = await fetch(WEBAPP_URL, {
+          method:'POST',
+          headers:{ 'Content-Type':'application/json' },
+          body: JSON.stringify({
+            type:'entry',
+            uid: currentUser.uid,
+            email: currentUser.email || '',
+            productName,
+            amount
+          })
+        });
+        const j = await res.json();
+        if (j.result === 'success') {
+          msg('✅ 응모 완료! 행운을 빌어요.');
+          await refreshBalance();
+        } else {
+          msg('⚠️ 실패: ' + (j.message || 'unknown'));
+        }
+      } catch(e) { msg('⚠️ 네트워크 오류: ' + e.message); }
+    });
+  </script>
+</body>
+</html>
