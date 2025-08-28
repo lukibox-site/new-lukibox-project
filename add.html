@@ -72,7 +72,13 @@
 
     // ✅ Apps Script doPost가 postMessage로 성공/실패를 보내도록 되어 있음
     window.addEventListener('message', (ev) => {
-      if (!ev.data || !ev.data.result) return;
+ if (ev.data.result === 'success') {
+  msg('✅ 등록 완료! 곧 목록으로 이동합니다…');
+  setTimeout(() => {
+    location.href = `products.html?added=${Date.now()}`; // ← 캐시 무력화
+  }, 600);
+}
+     if (!ev.data || !ev.data.result) return;
       document.__luky_posted = true;
       if (ev.data.result === 'success') {
         msg('✅ 등록 완료! products.html에서 확인하세요.');
