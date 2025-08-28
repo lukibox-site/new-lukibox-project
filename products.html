@@ -6,8 +6,6 @@
   <meta http-equiv="X-UA-Compatible" content="ie=edge" />
   <title>상품 목록 - LUCKYBOX</title>
   <style>
-.product img { width: 100%; height: auto; border-radius: 5px;
-               aspect-ratio: 4 / 3; object-fit: cover; display:block; }
     body {
       font-family: Arial, sans-serif;
       background-color: #f0f0f0;
@@ -27,7 +25,11 @@
       margin: 15px; padding: 20px; width: 260px; text-align: center;
       border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,.1);
     }
-    .product img { width: 100%; height: auto; border-radius: 5px; }
+    /* ✅ 이미지 레이아웃 점프 방지 (단일 규칙) */
+    .product img {
+      width: 100%; height: auto; border-radius: 5px;
+      aspect-ratio: 4 / 3; object-fit: cover; display: block;
+    }
     .cta-button {
       background-color: #e67e22; color: #fff; padding: 10px 20px;
       font-size: 16px; border: none; border-radius: 5px; cursor: pointer;
@@ -58,11 +60,11 @@
   };
 
   async function loadProducts() {
-    const url = `${WEBAPP_URL}?_=${Date.now()}`; // ← 캐시 무력화
+    const url = `${WEBAPP_URL}?_=${Date.now()}`; // 캐시 무력화
     const res = await fetch(url, { cache: 'no-store' });
     const products = await res.json();
 
-    // 등록일(registeredDate) 최신이 위로
+    // 최신 등록 순으로
     products.sort((a,b) => new Date(b.registeredDate || 0) - new Date(a.registeredDate || 0));
 
     const list = document.getElementById('productList');
@@ -70,7 +72,7 @@
 
     products.forEach(p => {
       let imgUrl = (p.productImage || '').trim();
-      if (imgUrl.includes(' ')) imgUrl = imgUrl.split(/\s+/)[0];
+      if (imgUrl.includes(' ')) imgUrl = imgUrl.split(/\s+/)[0]; // 여러 URL 섞인 경우 첫 번째만
 
       const card = document.createElement('div');
       card.className = 'product';
@@ -81,16 +83,21 @@
         <p>마감일: ${toDisplayDate(p.productDeadline)}</p>
         <button class="cta-button">응모하기</button>
       `;
+
+      // 이미지 실패 시 대체
       const imgEl = card.querySelector('img');
       imgEl.onerror = () => { imgEl.src = PLACEHOLDER; };
+
+      // 응모하기 → pay.html로 이동
       card.querySelector('.cta-button').addEventListener('click', () => {
         location.href = `pay.html?product=${encodeURIComponent(p.productName)}`;
       });
+
       list.appendChild(card);
     });
   }
 
-  // 처음 로드 + 5초 후 한 번 더 새로고침(시트 반영 지연 대비)
+  // 첫 로드 + 5초 후 재로딩 (시트 반영 지연 대비)
   loadProducts();
   setTimeout(() => { loadProducts().catch(()=>{}); }, 5000);
 </script>
