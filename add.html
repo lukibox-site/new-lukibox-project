@@ -9,11 +9,12 @@
     .wrap { max-width:720px; margin:0 auto; }
     h1 { margin:8px 0 16px; }
     .card { background:#fff; padding:20px; border-radius:12px; box-shadow:0 8px 24px rgba(0,0,0,.06); }
-    .row { display:grid; gap:12px; grid-template-columns: 1fr; }
-    label { font-weight:600; display:block; margin-top:10px; }
+    label { font-weight:600; display:block; margin-top:12px; }
     input, textarea { width:100%; padding:12px; border:1px solid #ddd; border-radius:8px; }
     textarea { min-height:120px; resize:vertical; }
-    .actions { display:flex; gap:8px; margin-top:12px; }
+    .grid-2 { display:grid; grid-template-columns: 1fr; gap:10px; }
+    @media (min-width: 640px){ .grid-2 { grid-template-columns: 1fr 1fr; } }
+    .actions { display:flex; gap:8px; margin-top:16px; }
     button { padding:12px 16px; border:none; border-radius:8px; background:#111; color:#fff; cursor:pointer; }
     button[disabled] { opacity:.6; cursor:not-allowed; }
     #msg { margin-top:12px; min-height:20px; }
@@ -33,13 +34,21 @@
             method="POST"
             target="hiddenIframe">
         <input type="hidden" name="type" value="product" />
+        <!-- productImage로 보낼 최종 문자열(자동 채움) -->
+        <input type="hidden" name="productImage" id="productImageFinal" />
 
         <label>상품명 *</label>
         <input name="productName" type="text" placeholder="예) Chrome Hearts 시계" required />
 
-        <label>이미지 URL *</label>
-        <input name="productImage" type="url" placeholder="https:// 로 시작하는 공개 이미지 1개" required />
-        <div class="note">이미지 URL은 <b>1개만</b> 넣어주세요. 여러 개 넣으면 첫 번째만 사용됩니다.</div>
+        <label>이미지 URL (최대 4개)</label>
+        <div class="note" style="margin-top:4px">공개로 접근 가능한 이미지 주소만 입력하세요. 비워둔 칸은 무시됩니다.</div>
+        <div class="grid-2">
+          <input id="img1" type="url" placeholder="이미지 1 (필수)">
+          <input id="img2" type="url" placeholder="이미지 2 (선택)">
+          <input id="img3" type="url" placeholder="이미지 3 (선택)">
+          <input id="img4" type="url" placeholder="이미지 4 (선택)">
+        </div>
+        <div class="note" style="margin-top:6px">※ 현재 목록 화면은 <b>첫 번째</b> 이미지로만 표시됩니다. (나중에 갤러리 확장 가능)</div>
 
         <label>설명</label>
         <textarea name="productDescription" placeholder="가격/구성/주의사항 등"></textarea>
@@ -58,38 +67,66 @@
   </div>
 
   <script>
-  const msg = (t)=> document.getElementById('msg').innerText = t || '';
+    const msg = (t)=> document.getElementById('msg').innerText = t || '';
+    const form = document.getElementById('addProductForm');
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const imgInputs = ['img1','img2','img3','img4'].map(id => document.getElementById(id));
+    const finalHidden = document.getElementById('productImageFinal');
 
-  // 폼 제출 시 진행 메시지 + 백업 이동 (postMessage 누락 대비)
-  document.getElementById('addProductForm').addEventListener('submit', () => {
-    msg('⏳ 등록 처리 중…');
-    // postMessage 수신 여부 플래그
-    document.__lucky_posted = false;
+    // 간단 URL 정리: 앞뒤 공백 제거, 공백이 섞인 경우 첫 토큰만
+    const cleanUrl = (s) => {
+      if (!s) return '';
+      const one = String(s).trim().split(/\s+/)[0];
+      return one;
+    };
 
-    // 3.5초 내 postMessage가 안 오면 목록으로 이동(캐시 무력화)
-    setTimeout(() => {
-      if (!document.__lucky_posted) {
-        msg('✅ 등록이 완료되었을 수 있습니다. 목록으로 이동합니다…');
-        location.href = `products.html?added=${Date.now()}`;
+    form.addEventListener('submit', (e) => {
+      // 이미지 최소 1개 검증 + 1~4개를 공백으로 합치기
+      const urls = imgInputs
+        .map(inp => cleanUrl(inp.value))
+        .filter(u => u); // 빈칸 제거
+
+      if (urls.length === 0) {
+        e.preventDefault();
+        msg('⚠️ 이미지 URL을 최소 1개 입력해 주세요.');
+        return;
       }
-    }, 3500);
-  });
 
-  // Apps Script doPost에서 보내는 postMessage 수신 (iframe → 부모창)
-  window.addEventListener('message', (ev) => {
-    if (!ev || !ev.data || !('result' in ev.data)) return;
+      // 최종 productImage 필드에 공백으로 이어 붙여서 넣기
+      finalHidden.value = urls.join(' ');
 
-    document.__lucky_posted = true;
+      // 중복 제출 방지 & 진행 메시지
+      submitBtn.disabled = true;
+      msg('⏳ 등록 처리 중…');
 
-    if (ev.data.result === 'success') {
-      msg('✅ 등록 완료! 곧 목록으로 이동합니다…');
+      // postMessage 수신 여부 플래그
+      document.__lucky_posted = false;
+
+      // 3.5초 내 postMessage가 안 오면 목록으로 이동(캐시 무력화)
       setTimeout(() => {
-        location.href = `products.html?added=${Date.now()}`; // 캐시 무력화
-      }, 600);
-    } else {
-      msg('⚠️ 등록 실패: ' + (ev.data.message || '알 수 없는 오류'));
-    }
-  });
-</script>
+        if (!document.__lucky_posted) {
+          msg('✅ 등록이 완료되었을 수 있습니다. 목록으로 이동합니다…');
+          location.href = `products.html?added=${Date.now()}`;
+        }
+      }, 3500);
+    });
+
+    // Apps Script doPost에서 보내는 postMessage 수신 (iframe → 부모창)
+    window.addEventListener('message', (ev) => {
+      if (!ev || !ev.data || !('result' in ev.data)) return;
+
+      document.__lucky_posted = true;
+
+      if (ev.data.result === 'success') {
+        msg('✅ 등록 완료! 곧 목록으로 이동합니다…');
+        setTimeout(() => {
+          location.href = `products.html?added=${Date.now()}`; // 캐시 무력화
+        }, 600);
+      } else {
+        msg('⚠️ 등록 실패: ' + (ev.data.message || '알 수 없는 오류'));
+        submitBtn.disabled = false;
+      }
+    });
+  </script>
 </body>
 </html>
