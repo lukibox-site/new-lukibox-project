@@ -44,11 +44,9 @@
 <div class="product-list" id="productList"></div>
 
 <script>
-  // ✅ 웹앱 URL
   const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbzr0NdCE6bMyz8J3Z4nKocZPECabcuZQzUEMjt9lbudyHmpebfGrK9ut1Xus_WUvewd/exec';
   const PLACEHOLDER = 'https://via.placeholder.com/600x400?text=LUCKYBOX';
 
-  // 날짜 보이기 Helper
   const toDisplayDate = (d) => {
     try {
       const dt = new Date(d);
@@ -57,45 +55,42 @@
     } catch { return String(d || ''); }
   };
 
-  // 상품 목록 불러오기
-  fetch(WEBAPP_URL)
-    .then(res => res.json())
-    .then(products => {
-      const list = document.getElementById('productList');
-      list.innerHTML = '';
+  async function loadProducts() {
+    const url = `${WEBAPP_URL}?_=${Date.now()}`; // ← 캐시 무력화
+    const res = await fetch(url, { cache: 'no-store' });
+    const products = await res.json();
 
-      products.forEach(p => {
-        // 이미지 URL에 공백으로 여러 링크가 섞여 있으면 첫 번째만 사용
-        let imgUrl = (p.productImage || '').trim();
-        if (imgUrl.includes(' ')) imgUrl = imgUrl.split(/\s+/)[0];
+    // 등록일(registeredDate) 최신이 위로
+    products.sort((a,b) => new Date(b.registeredDate || 0) - new Date(a.registeredDate || 0));
 
-        const card = document.createElement('div');
-        card.className = 'product';
-        card.innerHTML = `
-          <img src="${imgUrl || PLACEHOLDER}" alt="${p.productName}">
-          <h3>${p.productName}</h3>
-          <p>${(p.productDescription || '').replace(/\n/g,'<br>')}</p>
-          <p>마감일: ${toDisplayDate(p.productDeadline)}</p>
-          <button class="cta-button">응모하기</button>
-        `;
+    const list = document.getElementById('productList');
+    list.innerHTML = '';
 
-        // 이미지 깨지면 placeholder 대체
-        const imgEl = card.querySelector('img');
-        imgEl.onerror = () => { imgEl.src = PLACEHOLDER; };
+    products.forEach(p => {
+      let imgUrl = (p.productImage || '').trim();
+      if (imgUrl.includes(' ')) imgUrl = imgUrl.split(/\s+/)[0];
 
-        // ✅ 응모하기 버튼 → pay.html?product=...
-        const btn = card.querySelector('.cta-button');
-        btn.addEventListener('click', () => {
-          location.href = `pay.html?product=${encodeURIComponent(p.productName)}`;
-        });
-
-        list.appendChild(card);
+      const card = document.createElement('div');
+      card.className = 'product';
+      card.innerHTML = `
+        <img src="${imgUrl || PLACEHOLDER}" alt="${p.productName}" loading="lazy" decoding="async" />
+        <h3>${p.productName}</h3>
+        <p>${(p.productDescription || '').replace(/\n/g,'<br>')}</p>
+        <p>마감일: ${toDisplayDate(p.productDeadline)}</p>
+        <button class="cta-button">응모하기</button>
+      `;
+      const imgEl = card.querySelector('img');
+      imgEl.onerror = () => { imgEl.src = PLACEHOLDER; };
+      card.querySelector('.cta-button').addEventListener('click', () => {
+        location.href = `pay.html?product=${encodeURIComponent(p.productName)}`;
       });
-    })
-    .catch(err => {
-      console.error('상품 불러오기 실패:', err);
-      alert('상품 목록을 불러오는 데 실패했습니다.');
+      list.appendChild(card);
     });
+  }
+
+  // 처음 로드 + 5초 후 한 번 더 새로고침(시트 반영 지연 대비)
+  loadProducts();
+  setTimeout(() => { loadProducts().catch(()=>{}); }, 5000);
 </script>
 
 </body>
