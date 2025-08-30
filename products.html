@@ -6,34 +6,14 @@
   <meta http-equiv="X-UA-Compatible" content="ie=edge" />
   <title>상품 목록 - LUCKYBOX</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background-color: #f0f0f0;
-      color: #333;
-      padding: 50px;
-    }
-    .top-links {
-      position: fixed; right: 16px; top: 16px;
-      background: #fff; padding: 6px 10px; border-radius: 8px;
-      box-shadow: 0 2px 8px rgba(0,0,0,.08);
-      z-index: 10;
-    }
-    h1 { text-align: center; }
-    .product-list { display: flex; flex-wrap: wrap; justify-content: center; }
-    .product {
-      background-color: #fff;
-      margin: 15px; padding: 20px; width: 260px; text-align: center;
-      border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,.1);
-    }
-    .product img {
-      width: 100%; height: auto; border-radius: 5px;
-      aspect-ratio: 4 / 3; object-fit: cover; display: block;
-    }
-    .cta-button {
-      background-color: #e67e22; color: #fff; padding: 10px 20px;
-      font-size: 16px; border: none; border-radius: 5px; cursor: pointer;
-    }
-    .cta-button:hover { background-color: #d35400; }
+    body { font-family: Arial, sans-serif; background:#f0f0f0; color:#333; padding:50px; }
+    .top-links { position:fixed; right:16px; top:16px; background:#fff; padding:6px 10px; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,.08); z-index:10; }
+    h1 { text-align:center; }
+    .product-list { display:flex; flex-wrap:wrap; justify-content:center; }
+    .product { background:#fff; margin:15px; padding:20px; width:260px; text-align:center; border-radius:8px; box-shadow:0 4px 8px rgba(0,0,0,.1); }
+    .product img { width:100%; height:auto; border-radius:5px; aspect-ratio:4/3; object-fit:cover; display:block; }
+    .cta-button { background:#e67e22; color:#fff; padding:10px 20px; font-size:16px; border:none; border-radius:5px; cursor:pointer; }
+    .cta-button:hover { background:#d35400; }
   </style>
 </head>
 <body>
@@ -47,69 +27,58 @@
 <div class="product-list" id="productList"></div>
 
 <script>
-  // ✅ 새 GAS URL 반영
+  // ✅ GAS URL
   const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbyF_qi36KOrFRH1Qht2KFKFhVMJJUjjDYfbBognL8nUQF60l5OHrJlJTlCIENXawRA/exec';
   const PLACEHOLDER = 'https://via.placeholder.com/600x400?text=LUCKYBOX';
 
   const toDisplayDate = (d) => {
-    try {
-      const dt = new Date(d);
-      if (!isNaN(dt)) return dt.toLocaleString('ko-KR');
-      return String(d || '');
-    } catch { return String(d || ''); }
+    try { const dt = new Date(d); if (!isNaN(dt)) return dt.toLocaleString('ko-KR'); return String(d||''); }
+    catch { return String(d||''); }
   };
 
-  async function fetchJSONWithChecks(url) {
-    const u = new URL(url);
-    u.searchParams.set('_', Date.now().toString());
-    let res = await fetch(u.toString(), { cache: 'no-store', redirect: 'follow' });
-    const ctype = (res.headers.get('content-type') || '').toLowerCase();
-    if (!ctype.includes('application/json')) {
-      const text = await res.text();
-      try { return JSON.parse(text); } catch {
-        throw new Error('서버에서 JSON이 아닌 응답을 받았습니다.');
-      }
-    }
-    return await res.json();
+  async function fetchJSON(url){
+    const u = new URL(url); u.searchParams.set('_', Date.now());
+    const res = await fetch(u, {cache:'no-store', redirect:'follow'});
+    const ct = (res.headers.get('content-type')||'').toLowerCase();
+    const text = await res.text();
+    if (ct.includes('application/json')) return JSON.parse(text);
+    try { return JSON.parse(text); } catch { throw new Error('JSON이 아닌 응답'); }
   }
 
-  async function loadProducts() {
+  async function loadProducts(){
     const list = document.getElementById('productList');
     list.innerHTML = '<p style="color:#666">불러오는 중…</p>';
-    try {
-      const products = await fetchJSONWithChecks(WEBAPP_URL);
-      products.sort((a,b) => new Date(b.registeredDate||0) - new Date(a.registeredDate||0));
+    try{
+      const products = await fetchJSON(WEBAPP_URL + '?action=products');
+      products.sort((a,b)=>new Date(b.registeredDate||0)-new Date(a.registeredDate||0));
+      if(!products.length){ list.innerHTML = '<p style="color:#666">등록된 상품이 없습니다.</p>'; return; }
       list.innerHTML = '';
-      if (!Array.isArray(products) || products.length === 0) {
-        list.innerHTML = '<p style="color:#666">등록된 상품이 아직 없습니다.</p>';
-        return;
-      }
-      products.forEach(p => {
-        let imgUrl = (p.productImage || '').trim();
-        if (imgUrl.includes(' ')) imgUrl = imgUrl.split(/\s+/)[0];
+      products.forEach(p=>{
+        let img = (p.productImage||'').trim(); if(img.includes(' ')) img = img.split(/\s+/)[0];
         const card = document.createElement('div');
-        card.className = 'product';
+        card.className='product';
         card.innerHTML = `
-          <img src="${imgUrl || PLACEHOLDER}" alt="${p.productName||''}" loading="lazy" />
+          <img src="${img||PLACEHOLDER}" alt="${p.productName||''}" loading="lazy" />
           <h3>${p.productName||''}</h3>
           <p>${(p.productDescription||'').replace(/\n/g,'<br>')}</p>
           <p>마감일: ${toDisplayDate(p.productDeadline)}</p>
           <button class="cta-button">응모하기</button>
         `;
-        card.querySelector('.cta-button').addEventListener('click', () => {
+        // ✅ 캐시 무력화 버전 파라미터 추가
+        card.querySelector('.cta-button').addEventListener('click', ()=>{
           const name = p.productName ? encodeURIComponent(p.productName) : '';
-          location.href = `participation.html?product=${name}`;
+          const version = Date.now();
+          location.href = `participation.html?product=${name}&v=${version}`;
         });
         list.appendChild(card);
       });
-    } catch (err) {
-      console.error(err);
+    }catch(e){
+      console.error(e);
       list.innerHTML = '<p style="color:red">상품 목록을 불러오는 데 실패했습니다.</p>';
     }
   }
 
   document.addEventListener('DOMContentLoaded', loadProducts);
 </script>
-
 </body>
 </html>
