@@ -4,39 +4,121 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="ie=edge">
-  <title>LUCKYBOX - 응모 완료</title>
+  <title>LUCKYBOX - 응모하기</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background-color: #f0f0f0;
-      color: #333;
-      text-align: center;
-      padding: 50px;
-    }
-    .cta-button {
-      background-color: #e67e22;
-      color: white;
-      padding: 15px 30px;
-      font-size: 20px;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      text-decoration: none;
-    }
+    body { font-family: Arial, sans-serif; background:#f0f0f0; color:#333; padding:24px; }
+    .wrap { max-width: 820px; margin: 0 auto; }
+    .card { background:#fff; padding:20px; border-radius:10px; box-shadow:0 4px 12px rgba(0,0,0,.08); }
+    .grid { display:grid; grid-template-columns: 1fr 1fr; gap:20px; }
+    img { width:100%; height:auto; border-radius:8px; aspect-ratio:4/3; object-fit:cover; }
+    h1 { margin: 0 0 8px; }
+    .muted { color:#666; }
+    .row { margin-top: 12px; }
+    select { width:100%; padding:10px; border:1px solid #ddd; border-radius:8px; }
+    .actions { margin-top:20px; display:flex; gap:12px; }
+    .btn { background:#e67e22; color:#fff; padding:12px 18px; border:none; border-radius:8px; cursor:pointer; font-size:16px; }
+    .btn.secondary { background:#555; }
+    .note { font-size:14px; color:#666; margin-top:8px; }
+    @media (max-width: 720px) { .grid { grid-template-columns: 1fr; } }
   </style>
 </head>
 <body>
+<div class="wrap">
+  <div class="card">
+    <div class="grid">
+      <div>
+        <img id="pImg" src="" alt="product image">
+      </div>
+      <div>
+        <h1 id="pName">상품명</h1>
+        <div class="muted" id="pDeadline"></div>
+        <div class="row" id="pDesc"></div>
 
-<h1>응모가 완료되었습니다!</h1>
-<p>응모가 성공적으로 완료되었습니다. 당첨자 발표를 기다려주세요!</p>
+        <div class="row">
+          <label>응모권 금액</label>
+          <select id="amount">
+            <option value="1000">1,000원</option>
+            <option value="5000">5,000원</option>
+            <option value="10000">10,000원</option>
+            <option value="20000">20,000원</option>
+            <option value="50000">50,000원</option>
+            <option value="100000">100,000원</option>
+          </select>
+          <div class="note">※ 로그인/결제 연동 전: 테스트용으로 즉시 응모 완료 페이지로 이동합니다.</div>
+        </div>
 
-<a href="index.html" class="cta-button">메인 페이지로 돌아가기</a>
+        <div class="actions">
+          <button class="btn" id="btnEnter">응모하기</button>
+          <button class="btn secondary" onclick="history.back()">뒤로가기</button>
+        </div>
+        <div id="msg" class="note"></div>
+      </div>
+    </div>
+  </div>
+</div>
 
 <script>
-  // ✅ 동일하게 GAS URL 보관 (향후 참여 기록/포인트 차감 등에 쓸 수 있음)
+  // ✅ GAS URL
   const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbyF_qi36KOrFRH1Qht2KFKFhVMJJUjjDYfbBognL8nUQF60l5OHrJlJTlCIENXawRA/exec';
-  // TODO: 추후 여기에 fetch로 응모 기록을 POST하는 로직 연결 가능
-</script>
+  const PLACEHOLDER = 'https://via.placeholder.com/600x400?text=LUCKYBOX';
+  const qs = new URLSearchParams(location.search);
+  const productName = qs.get('product') ? decodeURIComponent(qs.get('product')) : '';
 
+  function toDisplayDate(d){
+    try { const dt = new Date(d); if(!isNaN(dt)) return dt.toLocaleString('ko-KR'); return String(d||''); }
+    catch { return String(d||''); }
+  }
+
+  async function fetchJSON(url, opts){
+    const res = await fetch(url, opts);
+    const text = await res.text();
+    try { return JSON.parse(text); } catch { throw new Error('JSON parse fail'); }
+  }
+
+  async function loadProduct(){
+    const msg = document.getElementById('msg');
+    if(!productName){ msg.textContent='잘못된 접근입니다. (상품 파라미터 없음)'; return; }
+    try{
+      const list = await fetchJSON(WEBAPP_URL + '?action=products', {cache:'no-store'});
+      const p = list.find(x => (x.productName||'') === productName);
+      if(!p){ msg.textContent='해당 상품을 찾을 수 없습니다.'; return; }
+      document.getElementById('pName').textContent = p.productName||'';
+      document.getElementById('pDesc').innerHTML = (p.productDescription||'').replace(/\n/g,'<br>');
+      document.getElementById('pDeadline').textContent = '마감일: ' + toDisplayDate(p.productDeadline);
+      let img = (p.productImage||'').trim(); if(img.includes(' ')) img = img.split(/\s+/)[0];
+      const imgEl = document.getElementById('pImg');
+      imgEl.src = img || PLACEHOLDER; imgEl.onerror = ()=>imgEl.src=PLACEHOLDER;
+    }catch(e){
+      msg.textContent='상품 정보를 불러오지 못했습니다.';
+      console.error(e);
+    }
+  }
+
+  async function submitEntry(){
+    const msg = document.getElementById('msg');
+    msg.textContent = '응모 처리 중…';
+    const amount = Number(document.getElementById('amount').value||0);
+
+    // 로그인/포인트 연동 전(데모 모드): 서버 호출 없이 완료 페이지로 이동
+    // 나중에 실제 반영 시 아래 주석 해제하고 GAS로 POST
+    /*
+    const uid = localStorage.getItem('uid') || '';
+    const email = localStorage.getItem('email') || '';
+    if(!uid) { alert('로그인 후 응모할 수 있습니다.'); return; }
+    const res = await fetch(WEBAPP_URL, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ type:'entry', uid, email, productName, amount })
+    });
+    const data = await res.json();
+    if(data.result !== 'success') { alert('응모 실패: ' + (data.message||'')); return; }
+    */
+
+    location.href = `participation_done.html?product=${encodeURIComponent(productName)}&amount=${amount}`;
+  }
+
+  document.addEventListener('DOMContentLoaded', loadProduct);
+  document.getElementById('btnEnter').addEventListener('click', submitEntry);
+</script>
 </body>
 </html>
