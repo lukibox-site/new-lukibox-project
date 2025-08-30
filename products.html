@@ -59,47 +59,113 @@
     } catch { return String(d || ''); }
   };
 
-  async function loadProducts() {
-    const url = `${WEBAPP_URL}?_=${Date.now()}`; // 캐시 무력화
-    const res = await fetch(url, { cache: 'no-store' });
-    const products = await res.json();
-
-    // 최신 등록 순으로
-    products.sort((a,b) => new Date(b.registeredDate || 0) - new Date(a.registeredDate || 0));
-
+  function showFriendlyError(msg, extraTip = '') {
     const list = document.getElementById('productList');
-    list.innerHTML = '';
-
-    products.forEach(p => {
-      let imgUrl = (p.productImage || '').trim();
-      if (imgUrl.includes(' ')) imgUrl = imgUrl.split(/\s+/)[0]; // 여러 URL 섞인 경우 첫 번째만
-
-      const card = document.createElement('div');
-      card.className = 'product';
-      card.innerHTML = `
-        <img src="${imgUrl || PLACEHOLDER}" alt="${p.productName}" loading="lazy" decoding="async" />
-        <h3>${p.productName}</h3>
-        <p>${(p.productDescription || '').replace(/\n/g,'<br>')}</p>
-        <p>마감일: ${toDisplayDate(p.productDeadline)}</p>
-        <button class="cta-button">응모하기</button>
-      `;
-
-      // 이미지 실패 시 대체
-      const imgEl = card.querySelector('img');
-      imgEl.onerror = () => { imgEl.src = PLACEHOLDER; };
-
-      // 응모하기 → pay.html로 이동
-      card.querySelector('.cta-button').addEventListener('click', () => {
-        location.href = `pay.html?product=${encodeURIComponent(p.productName)}`;
-      });
-
-      list.appendChild(card);
-    });
+    list.innerHTML = `
+      <div style="max-width:720px;background:#fff;padding:16px;border-radius:8px;box-shadow:0 2px 10px rgba(0,0,0,.06)">
+        <h3 style="margin:0 0 8px">상품 목록을 불러오는 데 실패했습니다</h3>
+        <p style="margin:0 0 6px;color:#555">${msg}</p>
+        ${extraTip ? `<div style="margin-top:10px;font-size:14px;line-height:1.5;color:#666"><b>확인하세요:</b><br>${extraTip}</div>` : ''}
+        <button id="retryBtn" class="cta-button" style="margin-top:12px">다시 시도</button>
+      </div>
+    `;
+    const btn = document.getElementById('retryBtn');
+    if (btn) btn.addEventListener('click', () => loadProducts(true));
   }
 
-  // 첫 로드 + 5초 후 재로딩 (시트 반영 지연 대비)
-  loadProducts();
-  setTimeout(() => { loadProducts().catch(()=>{}); }, 5000);
+  async function fetchJSONWithChecks(url) {
+    // 캐시 무력화 쿼리
+    const u = new URL(url);
+    u.searchParams.set('_', Date.now().toString());
+
+    // 1차 시도
+    let res = await fetch(u.toString(), { cache: 'no-store', redirect: 'follow' });
+
+    // 일부 환경에선 302→HTML 반환되는 경우가 있어 content-type 점검
+    const ctype = (res.headers.get('content-type') || '').toLowerCase();
+    if (!ctype.includes('application/json')) {
+      // 본문을 조금만 읽어보고 힌트 제공
+      const text = await res.text();
+      // 로그인/권한 관련 HTML이면 친절 메시지
+      if (text.includes('<html') || text.includes('google') || text.toLowerCase().includes('login')) {
+        throw new Error('JSON이 아닌 HTML 응답을 수신했어요 (GAS 권한/배포 설정 이슈 가능).');
+      } else {
+        // 혹시 MIME만 잘못된 케이스: JSON 파싱 재시도
+        try {
+          return JSON.parse(text);
+        } catch {
+          throw new Error('서버에서 JSON이 아닌 응답을 받았습니다.');
+        }
+      }
+    }
+
+    // 정상 JSON
+    return await res.json();
+  }
+
+  async function loadProducts(isRetry = false) {
+    const list = document.getElementById('productList');
+    if (!isRetry) list.innerHTML = '<p style="color:#666">불러오는 중…</p>';
+
+    try {
+      const products = await fetchJSONWithChecks(WEBAPP_URL);
+
+      // 최신 등록 순으로 정렬
+      products.sort((a,b) => new Date(b.registeredDate || 0) - new Date(a.registeredDate || 0));
+
+      list.innerHTML = '';
+      if (!Array.isArray(products) || products.length === 0) {
+        list.innerHTML = '<p style="color:#666">등록된 상품이 아직 없습니다.</p>';
+        return;
+      }
+
+      products.forEach(p => {
+        let imgUrl = (p.productImage || '').trim();
+        if (imgUrl.includes(' ')) imgUrl = imgUrl.split(/\s+/)[0];
+
+        const card = document.createElement('div');
+        card.className = 'product';
+        card.innerHTML = `
+          <img src="${imgUrl || PLACEHOLDER}" alt="${p.productName || ''}" loading="lazy" decoding="async" />
+          <h3>${p.productName || ''}</h3>
+          <p>${(p.productDescription || '').replace(/\n/g,'<br>')}</p>
+          <p>마감일: ${toDisplayDate(p.productDeadline)}</p>
+          <button class="cta-button">응모하기</button>
+        `;
+
+        const imgEl = card.querySelector('img');
+        imgEl.onerror = () => { imgEl.src = PLACEHOLDER; };
+
+        card.querySelector('.cta-button').addEventListener('click', () => {
+          const name = p.productName ? encodeURIComponent(p.productName) : '';
+          location.href = `pay.html?product=${name}`;
+        });
+
+        list.appendChild(card);
+      });
+
+    } catch (err) {
+      console.error('[products] load fail:', err);
+
+      // 실패 유형에 따라 사용자 메시지 분기
+      const tips = `
+        1) Google Apps Script 웹 앱 <b>배포 설정</b> 확인:<br>
+        &nbsp;&nbsp;• <i>실행자</i>: 본인(또는 웹 앱 소유자)<br>
+        &nbsp;&nbsp;• <i>액세스 권한</i>: <b>모든 사용자</b> (로그인 불필요)<br>
+        &nbsp;&nbsp;• 새 버전으로 <b>재배포</b> 후 새 URL 사용<br><br>
+        2) GAS의 <code>doGet(e)</code>에서 <b>JSON</b>으로 반환하는지 확인:<br>
+        &nbsp;&nbsp;<code>ContentService.createTextOutput(JSON.stringify(data)).setMimeType(ContentService.MimeType.JSON)</code><br><br>
+        3) 브라우저/네트워크 캐시 영향 최소화를 위해 새로고침(Shift+F5) 또는 시크릿 창에서 테스트
+      `;
+      showFriendlyError(err.message || '네트워크 오류', tips);
+    }
+  }
+
+  // 첫 로드 + 5초 후 재로딩(시트 반영 지연 대비)
+  document.addEventListener('DOMContentLoaded', () => {
+    loadProducts();
+    setTimeout(() => { loadProducts(true).catch(()=>{}); }, 5000);
+  });
 </script>
 
 </body>
