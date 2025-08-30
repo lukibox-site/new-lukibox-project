@@ -1,95 +1,41 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>LUCKYBOX - 상품 목록</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f0f0f0;
-            color: #333;
-            padding: 50px;
-        }
-        h1 {
-            text-align: center;
-        }
-        .product-list {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-        .product {
-            background-color: white;
-            margin: 15px;
-            padding: 20px;
-            width: 250px;
-            text-align: center;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        }
-        .product img {
-            width: 100%;
-            height: auto;
-            border-radius: 5px;
-        }
-        .product p {
-            margin: 10px 0;
-        }
-        .cta-button {
-            background-color: #e67e22;
-            color: white;
-            padding: 10px 20px;
-            font-size: 16px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        .cta-button:hover {
-            background-color: #d35400;
-        }
-        .payment-option {
-            margin-top: 20px;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>LUCKYBOX - 응모 완료</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f0f0f0;
+      color: #333;
+      text-align: center;
+      padding: 50px;
+    }
+    .cta-button {
+      background-color: #e67e22;
+      color: white;
+      padding: 15px 30px;
+      font-size: 20px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      text-decoration: none;
+    }
+  </style>
 </head>
 <body>
 
-<h1>등록된 상품 목록</h1>
+<h1>응모가 완료되었습니다!</h1>
+<p>응모가 성공적으로 완료되었습니다. 당첨자 발표를 기다려주세요!</p>
 
-<div class="product-list" id="productList">
-    <!-- 상품 목록은 동적으로 로딩됩니다. -->
-</div>
+<a href="index.html" class="cta-button">메인 페이지로 돌아가기</a>
 
 <script>
-    // Google Apps Script 연동으로 상품 목록을 가져오기
-    fetch('YOUR_SCRIPT_URL')
-        .then(response => response.json())
-        .then(products => {
-            const productList = document.getElementById("productList");
-            products.forEach(product => {
-                const productDiv = document.createElement('div');
-                productDiv.classList.add('product');
-                productDiv.innerHTML = `
-                    <img src="${product.productImage}" alt="${product.productName}">
-                    <h3>${product.productName}</h3>
-                    <p>${product.productDescription}</p>
-                    <p>마감일: ${product.productDeadline}</p>
-                    <button class="cta-button" onclick="selectProduct('${product.productName}')">응모하기</button>
-                `;
-                productList.appendChild(productDiv);
-            });
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert("상품 목록을 불러오는 데 실패했습니다.");
-        });
-
-    // 상품 선택 시 응모권 결제 페이지로 이동
-    function selectProduct(productName) {
-        window.location.href = `payment.html?product=${productName}`;
-    }
+  // ✅ 동일하게 GAS URL 보관 (향후 참여 기록/포인트 차감 등에 쓸 수 있음)
+  const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbyF_qi36KOrFRH1Qht2KFKFhVMJJUjjDYfbBognL8nUQF60l5OHrJlJTlCIENXawRA/exec';
+  // TODO: 추후 여기에 fetch로 응모 기록을 POST하는 로직 연결 가능
 </script>
 
 </body>
