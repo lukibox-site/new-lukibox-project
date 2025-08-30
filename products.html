@@ -27,7 +27,6 @@
 <div class="product-list" id="productList"></div>
 
 <script>
-  // ✅ GAS URL
   const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbyF_qi36KOrFRH1Qht2KFKFhVMJJUjjDYfbBognL8nUQF60l5OHrJlJTlCIENXawRA/exec';
   const PLACEHOLDER = 'https://via.placeholder.com/600x400?text=LUCKYBOX';
 
@@ -39,10 +38,8 @@
   async function fetchJSON(url){
     const u = new URL(url); u.searchParams.set('_', Date.now());
     const res = await fetch(u, {cache:'no-store', redirect:'follow'});
-    const ct = (res.headers.get('content-type')||'').toLowerCase();
     const text = await res.text();
-    if (ct.includes('application/json')) return JSON.parse(text);
-    try { return JSON.parse(text); } catch { throw new Error('JSON이 아닌 응답'); }
+    return JSON.parse(text);
   }
 
   async function loadProducts(){
@@ -64,11 +61,13 @@
           <p>마감일: ${toDisplayDate(p.productDeadline)}</p>
           <button class="cta-button">응모하기</button>
         `;
-        // ✅ 캐시 무력화 버전 파라미터 추가
         card.querySelector('.cta-button').addEventListener('click', ()=>{
           const name = p.productName ? encodeURIComponent(p.productName) : '';
-          const version = Date.now();
-          location.href = `participation.html?product=${name}&v=${version}`;
+          const baseUrl = new URL('.', window.location.href);
+          const target  = new URL('participation.html', baseUrl);
+          target.searchParams.set('product', name);
+          target.searchParams.set('v', Date.now()); // 캐시 무력화
+          location.href = target.toString();
         });
         list.appendChild(card);
       });
