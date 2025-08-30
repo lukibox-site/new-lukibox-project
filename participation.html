@@ -42,7 +42,7 @@
             <option value="50000">50,000원</option>
             <option value="100000">100,000원</option>
           </select>
-          <div class="note">※ 로그인/결제 연동 전: 테스트용으로 즉시 완료 페이지로 이동합니다.</div>
+          <div class="note">※ 로그인/결제 연동 전: 테스트용으로 완료 페이지로 바로 이동합니다.</div>
         </div>
 
         <div class="actions">
@@ -69,12 +69,12 @@
   async function fetchJSON(url, opts){
     const res = await fetch(url, opts);
     const text = await res.text();
-    try { return JSON.parse(text); } catch { throw new Error('JSON parse fail'); }
+    return JSON.parse(text);
   }
 
   async function loadProduct(){
     const msg = document.getElementById('msg');
-    if(!productName){ msg.textContent='잘못된 접근입니다. (상품 파라미터 없음)'; return; }
+    if(!productName){ msg.textContent='잘못된 접근입니다.'; return; }
     try{
       const list = await fetchJSON(WEBAPP_URL + '?action=products', {cache:'no-store'});
       const p = list.find(x => (x.productName||'') === productName);
@@ -88,22 +88,8 @@
   }
 
   async function submitEntry(){
-    const msg = document.getElementById('msg');
-    msg.textContent='응모 처리 중…';
     const amount = Number(document.getElementById('amount').value||0);
-
-    // 실제 연동 전: 완료 페이지로 이동 (데모 모드)
-    // 로그인/포인트 연동 후 아래 POST 로직을 활성화하면 됨.
-    /*
-    const uid = localStorage.getItem('uid')||''; const email = localStorage.getItem('email')||'';
-    if(!uid){ alert('로그인 후 응모할 수 있습니다.'); return; }
-    const res = await fetch(WEBAPP_URL, {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ type:'entry', uid, email, productName, amount })
-    });
-    const data = await res.json();
-    if(data.result!=='success'){ alert('응모 실패: '+(data.message||'')); return; }
-    */
+    // 데모 모드: 완료 페이지로 이동
     location.href = `participation_done.html?product=${encodeURIComponent(productName)}&amount=${amount}`;
   }
 
