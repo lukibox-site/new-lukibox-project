@@ -2,82 +2,176 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta http-equiv="X-UA-Compatible" content="ie=edge" />
   <title>상품 목록 - LUCKYBOX</title>
   <style>
-    body { font-family: Arial, sans-serif; background:#f0f0f0; color:#333; padding:50px; }
-    .top-links { position:fixed; right:16px; top:16px; background:#fff; padding:6px 10px; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,.08); z-index:10; }
-    h1 { text-align:center; }
-    .product-list { display:flex; flex-wrap:wrap; justify-content:center; }
-    .product { background:#fff; margin:15px; padding:20px; width:260px; text-align:center; border-radius:8px; box-shadow:0 4px 8px rgba(0,0,0,.1); }
-    .product img { width:100%; height:auto; border-radius:5px; aspect-ratio:4/3; object-fit:cover; display:block; }
-    .cta-button { background:#e67e22; color:#fff; padding:10px 20px; font-size:16px; border:none; border-radius:5px; cursor:pointer; }
-    .cta-button:hover { background:#d35400; }
+    :root { --bg:#f5f5f5; --fg:#222; --card:#fff; --accent:#e67e22; --muted:#666; }
+    * { box-sizing: border-box; }
+    body {
+      margin:0; padding:32px;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: var(--bg); color: var(--fg);
+    }
+
+    .topbar {
+      display:flex; justify-content:flex-end; gap:16px; margin-bottom:24px;
+    }
+    .topbar a { color: var(--fg); text-decoration:none; }
+    .topbar a:hover { text-decoration: underline; }
+
+    h1 { text-align:center; margin:8px 0 24px; }
+
+    /* 카드 그리드 */
+    .grid {
+      display:grid; gap:20px;
+      grid-template-columns: repeat(3, minmax(240px, 1fr));
+      max-width: 1100px; margin: 0 auto;
+    }
+    @media (max-width: 980px) {
+      .grid { grid-template-columns: repeat(2, minmax(240px, 1fr)); }
+    }
+    @media (max-width: 620px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+
+    .card {
+      display:flex; flex-direction:column; overflow:hidden;
+      background:var(--card); border-radius:12px;
+      box-shadow: 0 10px 24px rgba(0,0,0,.08);
+      transition: transform .15s ease, box-shadow .15s ease;
+    }
+    .card:hover { transform: translateY(-2px); box-shadow:0 14px 30px rgba(0,0,0,.12); }
+
+    /* 위: 이미지 */
+    .card .thumb {
+      width:100%; aspect-ratio: 4/3; background:#eee;
+      overflow:hidden;
+    }
+    .card .thumb img {
+      width:100%; height:100%; object-fit:cover; display:block;
+    }
+
+    /* 아래: 정보 영역 */
+    .card .info {
+      padding:14px 16px 16px;
+      display:flex; flex-direction:column; gap:8px;
+      border-top: 3px solid #000;  /* 스케치처럼 위/아래 구분선 느낌 */
+    }
+    .title { font-weight:700; font-size:18px; line-height:1.2; }
+    .desc { color:var(--muted); font-size:14px; line-height:1.45; height: 42px; overflow:hidden; }
+    .deadline { color:var(--muted); font-size:12px; }
+
+    .cta {
+      align-self: stretch; margin-top:6px;
+      background:var(--accent); color:#fff; border:0; border-radius:8px;
+      padding:10px 14px; font-size:16px; cursor:pointer;
+    }
+    .cta:hover { filter: brightness(.95); }
+    .placeholder { color:var(--muted); text-align:center; margin-top:24px; }
+
+    .srchint { display:none; } /* 접근성용 숨김 */
   </style>
 </head>
 <body>
 
-<div class="top-links">
-  <a href="login.html">로그인</a> |
-  <a href="wallet.html">지갑</a>
-</div>
+  <div class="topbar">
+    <a href="login.html">로그인</a>
+    <a href="login.html">회원가입</a>
+  </div>
 
-<h1>등록된 상품 목록</h1>
-<div class="product-list" id="productList"></div>
+  <h1>등록된 상품 목록</h1>
 
-<script>
-  const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbyF_qi36KOrFRH1Qht2KFKFhVMJJUjjDYfbBognL8nUQF60l5OHrJlJTlCIENXawRA/exec';
-  const PLACEHOLDER = 'https://via.placeholder.com/600x400?text=LUCKYBOX';
+  <div id="grid" class="grid"></div>
+  <p id="empty" class="placeholder" style="display:none">등록된 상품이 아직 없습니다.</p>
 
-  const toDisplayDate = (d) => {
-    try { const dt = new Date(d); if (!isNaN(dt)) return dt.toLocaleString('ko-KR'); return String(d||''); }
-    catch { return String(d||''); }
-  };
+  <script>
+    // ✅ GAS URL
+    const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbyF_qi36KOrFRH1Qht2KFKFhVMJJUjjDYfbBognL8nUQF60l5OHrJlJTlCIENXawRA/exec';
+    const PLACEHOLDER = 'https://via.placeholder.com/800x600?text=LUCKYBOX';
 
-  async function fetchJSON(url){
-    const u = new URL(url); u.searchParams.set('_', Date.now());
-    const res = await fetch(u, {cache:'no-store', redirect:'follow'});
-    const text = await res.text();
-    return JSON.parse(text);
-  }
+    const toDisplayDate = (d) => {
+      try { const dt = new Date(d); if (!isNaN(dt)) return dt.toLocaleString('ko-KR'); return String(d||''); }
+      catch { return String(d||''); }
+    };
 
-  async function loadProducts(){
-    const list = document.getElementById('productList');
-    list.innerHTML = '<p style="color:#666">불러오는 중…</p>';
-    try{
-      const products = await fetchJSON(WEBAPP_URL + '?action=products');
-      products.sort((a,b)=>new Date(b.registeredDate||0)-new Date(a.registeredDate||0));
-      if(!products.length){ list.innerHTML = '<p style="color:#666">등록된 상품이 없습니다.</p>'; return; }
-      list.innerHTML = '';
-      products.forEach(p=>{
-        let img = (p.productImage||'').trim(); if(img.includes(' ')) img = img.split(/\s+/)[0];
-        const card = document.createElement('div');
-        card.className='product';
-        card.innerHTML = `
-          <img src="${img||PLACEHOLDER}" alt="${p.productName||''}" loading="lazy" />
-          <h3>${p.productName||''}</h3>
-          <p>${(p.productDescription||'').replace(/\n/g,'<br>')}</p>
-          <p>마감일: ${toDisplayDate(p.productDeadline)}</p>
-          <button class="cta-button">응모하기</button>
-        `;
-        card.querySelector('.cta-button').addEventListener('click', ()=>{
-          const name = p.productName ? encodeURIComponent(p.productName) : '';
-          const baseUrl = new URL('.', window.location.href);
-          const target  = new URL('participation.html', baseUrl);
-          target.searchParams.set('product', name);
-          target.searchParams.set('v', Date.now()); // 캐시 무력화
-          location.href = target.toString();
-        });
-        list.appendChild(card);
-      });
-    }catch(e){
-      console.error(e);
-      list.innerHTML = '<p style="color:red">상품 목록을 불러오는 데 실패했습니다.</p>';
+    async function fetchJSON(url){
+      const u = new URL(url); u.searchParams.set('_', Date.now()); // 캐시 무력화
+      const res = await fetch(u, { cache:'no-store', redirect:'follow' });
+      const text = await res.text();
+      return JSON.parse(text);
     }
-  }
 
-  document.addEventListener('DOMContentLoaded', loadProducts);
-</script>
+    function gotoParticipation(productName){
+      // 현재 폴더 기준으로 안전하게 participation.html로 이동 + 캐시 무력화
+      const base = new URL('.', location.href);
+      const target = new URL('participation.html', base);
+      target.searchParams.set('product', productName);
+      target.searchParams.set('v', Date.now());
+      location.href = target.toString();
+    }
+
+    function render(products){
+      const grid = document.getElementById('grid');
+      const empty = document.getElementById('empty');
+
+      grid.innerHTML = '';
+      if (!products.length) {
+        empty.style.display = 'block';
+        return;
+      }
+      empty.style.display = 'none';
+
+      products.forEach(p => {
+        let img = (p.productImage || '').trim();
+        if (img.includes(' ')) img = img.split(/\s+/)[0];
+
+        const encodedName = encodeURIComponent(p.productName || '');
+
+        const card = document.createElement('article');
+        card.className = 'card';
+        card.innerHTML = `
+          <div class="thumb">
+            <img src="${img || PLACEHOLDER}" alt="${p.productName || 'product image'}" loading="lazy">
+          </div>
+          <div class="info">
+            <div class="title">${p.productName || ''}</div>
+            <div class="desc">${(p.productDescription || '').replace(/\n/g,'<br>')}</div>
+            <div class="deadline">마감일: ${toDisplayDate(p.productDeadline)}</div>
+            <button class="cta" type="button">응모하기</button>
+          </div>
+        `;
+
+        // 이미지 실패 시 대체
+        card.querySelector('img').addEventListener('error', (e)=>{ e.currentTarget.src = PLACEHOLDER; });
+
+        // 버튼 클릭 → participation.html 이동
+        card.querySelector('.cta').addEventListener('click', () => gotoParticipation(encodedName));
+
+        // (선택) 카드 하단 영역 클릭도 이동하고 싶다면 아래 주석 해제
+        // card.querySelector('.info').addEventListener('click', (e) => {
+        //   if (e.target.closest('.cta')) return; // 버튼 클릭은 위 핸들러로
+        //   gotoParticipation(encodedName);
+        // });
+
+        grid.appendChild(card);
+      });
+    }
+
+    async function boot(){
+      try{
+        const list = await fetchJSON(WEBAPP_URL + '?action=products');
+        // 최신 등록일 순
+        list.sort((a,b)=> new Date(b.registeredDate||0) - new Date(a.registeredDate||0));
+        render(list);
+      }catch(err){
+        console.error(err);
+        document.getElementById('empty').textContent = '상품 목록을 불러오는 데 실패했습니다.';
+        document.getElementById('empty').style.display = 'block';
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', boot);
+  </script>
 </body>
 </html>
